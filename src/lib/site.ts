@@ -170,3 +170,61 @@ export const THEMES_LOADER = `
   true;
 })();
 `;
+
+/**
+ * Small app-only additions to the site's UI. Runs after load and re-applies
+ * after the site's pjax navigation.
+ * - "Настройки" in the bell dropdown and on /notifications: opens Android's
+ *   notification settings for the app.
+ */
+export const APP_UI_JS = `
+(function () {
+  if (window.__huevoAppUi) return;
+  window.__huevoAppUi = true;
+  var CLS = 'huevo-notif-settings';
+
+  function post(msg) {
+    if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(msg));
+  }
+
+  function link(extra) {
+    var a = document.createElement('a');
+    a.href = '#';
+    a.className = CLS + (extra ? ' ' + extra : '');
+    a.textContent = 'Настройки';
+    return a;
+  }
+
+  function apply() {
+    var head = document.querySelector('#mh-notif .mh-notif-head');
+    if (head && !head.querySelector('.' + CLS)) {
+      head.style.gap = '14px';
+      var title = head.querySelector('b');
+      if (title) title.style.marginRight = 'auto';
+      var all = head.querySelector('a');
+      head.insertBefore(link(), all);
+    }
+    if (location.pathname === '/notifications') {
+      var cardTitle = document.querySelector('#main-content .vk-card-title');
+      if (cardTitle && !cardTitle.querySelector('.' + CLS)) cardTitle.appendChild(link('vk-title-btn vk-btn'));
+    }
+  }
+
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('.' + CLS) : null;
+    if (!a) return;
+    e.preventDefault();
+    e.stopPropagation();
+    post({ type: 'open-notification-settings' });
+  }, true);
+
+  var pending = false;
+  new MutationObserver(function () {
+    if (pending) return;
+    pending = true;
+    setTimeout(function () { pending = false; apply(); }, 80);
+  }).observe(document.body, { childList: true, subtree: true });
+  apply();
+  true;
+})();
+`;

@@ -1,6 +1,9 @@
 package su.huevo.notify
 
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.webkit.WebSettings
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -26,6 +29,18 @@ class HuevoNotifyModule : Module() {
     Function("wasPermissionAsked") {
       val ctx = appContext.reactContext ?: return@Function true
       NotifyWorker.prefs(ctx).getBoolean("asked", false)
+    }
+
+    /** Android's notification settings for the app (channels, sound, on/off). */
+    Function("openSettings") {
+      val activity = appContext.currentActivity ?: return@Function null
+      val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName)
+      } else {
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + activity.packageName))
+      }
+      activity.startActivity(intent)
+      null
     }
 
     Function("setPermissionAsked") {

@@ -15,6 +15,7 @@ import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { clearMedia, updateMedia } from 'huevo-media';
 import {
   addOpenPathListener,
+  openNotificationSettings,
   setPermissionAsked,
   startNotifications,
   takeLaunchPath,
@@ -25,6 +26,7 @@ import { saveToDownloads } from 'huevo-themes';
 
 import {
   APP_UA_SUFFIX,
+  APP_UI_JS,
   INJECTED_JS,
   isInAppUrl,
   MEDIA_SESSION_SHIM,
@@ -95,6 +97,7 @@ export function SiteWebView({ background, onThemeColor }: Props) {
       const msg = JSON.parse(e.nativeEvent.data);
       if (msg?.type === 'theme' && typeof msg.color === 'string') onThemeColor(msg.color);
       if (msg?.type === 'themes-sheet') themesOpen.current = !!msg.open;
+      if (msg?.type === 'open-notification-settings') openNotificationSettings();
       if (msg?.type === 'download' && typeof msg.data === 'string') {
         saveToDownloads(String(msg.name || 'file'), msg.data, String(msg.mime || 'application/octet-stream')).catch(
           () => {},
@@ -127,7 +130,7 @@ export function SiteWebView({ background, onThemeColor }: Props) {
       style={{ backgroundColor: background }}
       applicationNameForUserAgent={APP_UA_SUFFIX}
       injectedJavaScriptBeforeContentLoaded={BEFORE_LOAD}
-      injectedJavaScript={INJECTED_JS}
+      injectedJavaScript={INJECTED_JS + APP_UI_JS}
       onMessage={onMessage}
       onShouldStartLoadWithRequest={({ url }) => {
         if (isInAppUrl(url)) return true;

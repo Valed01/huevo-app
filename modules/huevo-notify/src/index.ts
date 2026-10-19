@@ -6,6 +6,7 @@ type Native = {
   takeLaunchPath(): string | null;
   wasPermissionAsked(): boolean;
   setPermissionAsked(): void;
+  openSettings(): void;
   addListener(event: 'onOpenPath', listener: (e: { path: string }) => void): EventSubscription;
 };
 
@@ -20,6 +21,9 @@ export const takeLaunchPath = () => native.takeLaunchPath();
 /** Notification tapped while the app is already running. */
 export const addOpenPathListener = (listener: (path: string) => void) =>
   native.addListener('onOpenPath', (e) => listener(e.path));
+
+/** Opens Android's notification settings for huEVO. */
+export const openNotificationSettings = () => native.openSettings();
 
 export const wasPermissionAsked = () => native.wasPermissionAsked();
 export const setPermissionAsked = () => native.setPermissionAsked();
