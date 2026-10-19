@@ -179,6 +179,7 @@ export const THEMES_LOADER = `
  * after the site's pjax navigation.
  * - "Настройки" in the bell dropdown and on /notifications: opens Android's
  *   notification settings for the app.
+ * - touches report whether native pull-to-refresh may start from them.
  * - window.__huevoUpdate: the "new version" dialog, built from the site's own
  *   components (.vk-card, .vk-btn) so it looks native in light and dark.
  */
@@ -327,6 +328,25 @@ export const APP_UI_JS = `
     },
     isOpen: function () { return !!upd; }
   };
+
+  // ---- Pull to refresh (native, in the app): may this touch start it? ----
+  // Not when the page is scrolled, when the finger is on a scrolled block (chat history,
+  // lists) or on an overlay (menus, sheets, players), so the gesture stays theirs.
+  function canPullFrom(el) {
+    if ((document.scrollingElement || document.documentElement).scrollTop > 0) return false;
+    for (var n = el; n && n.nodeType === 1 && n !== document.body; n = n.parentElement) {
+      if (n.id === 'ap-header-wrap' || n.id === 'hue-tabbar') return true;
+      var cs = getComputedStyle(n);
+      if (cs.position === 'fixed') return false;
+      if (/(auto|scroll)/.test(cs.overflowY) && n.scrollHeight > n.clientHeight && n.scrollTop > 0) return false;
+    }
+    return true;
+  }
+  var lastPull = null;
+  document.addEventListener('touchstart', function (e) {
+    var ok = canPullFrom(e.target);
+    if (ok !== lastPull) { lastPull = ok; post({ type: 'pull-refresh', ok: ok }); }
+  }, { capture: true, passive: true });
 
   var pending = false;
   new MutationObserver(function () {

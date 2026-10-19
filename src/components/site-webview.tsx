@@ -6,6 +6,8 @@ import {
   PermissionsAndroid,
   Platform,
   Pressable,
+  RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -95,6 +97,11 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
   const release = useRef<Release | null>(null);
   const updateChecked = useRef(false);
   const [failed, setFailed] = useState(false);
+  // Pull to refresh: allowed only at the top of the page and when the touch isn't on a
+  // scrolled block or overlay (reported by the page, see APP_UI_JS).
+  const [atTop, setAtTop] = useState(true);
+  const [touchOk, setTouchOk] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   // Opened from a huevo.su link or a notification: start on that page.
   const [startUrl] = useState(() => {
     if (openUrl && isInAppUrl(openUrl)) return openUrl;
@@ -137,7 +144,9 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
   useEffect(() => {
     startUpdateChecks(GITHUB_REPO);
     const show = addShowUpdateListener(() => offerUpdate({ force: true, ignoreSnooze: true }));
-    const progress = addUpdateProgressListener((pct) => js(`window.__huevoUpdate && window.__huevoUpdate.progress(${pct})`));
+    const progress = addUpdateProgressListener((pct) =>
+      js(`window.__huevoUpdate && window.__huevoUpdate.progress(${pct})`),
+    );
     return () => {
       show.remove();
       progress.remove();
@@ -175,9 +184,12 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
       if (msg?.type === 'theme' && typeof msg.color === 'string') onThemeColor(msg.color);
       if (msg?.type === 'themes-sheet') themesOpen.current = !!msg.open;
       if (msg?.type === 'open-notification-settings') openNotificationSettings();
+      if (msg?.type === 'pull-refresh') setTouchOk(!!msg.ok);
       if (msg?.type === 'update-install' && release.current) {
         installUpdate(release.current).catch(() =>
-          js(`window.__huevoUpdate && window.__huevoUpdate.error(${JSON.stringify('Не удалось скачать обновление. Проверьте интернет и попробуйте ещё раз.')})`),
+          js(
+            `window.__huevoUpdate && window.__huevoUpdate.error(${JSON.stringify('Не удалось скачать обновление. Проверьте интернет и попробуйте ещё раз.')})`,
+          ),
         );
       }
       if (msg?.type === 'update-later') {
@@ -213,61 +225,87 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
     );
   }
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    ref.current?.reload();
+    // The spinner ends with the load; don't let a stalled page keep it forever.
+    setTimeout(() => setRefreshing(false), 15000);
+  };
+
   return (
-    <WebView<object>
-      ref={ref}
-      source={{ uri: startUrl }}
-      style={{ backgroundColor: background }}
-      applicationNameForUserAgent={APP_UA_SUFFIX}
-      injectedJavaScriptBeforeContentLoaded={BEFORE_LOAD}
-      injectedJavaScript={INJECTED_JS + APP_UI_JS}
-      onMessage={onMessage}
-      onShouldStartLoadWithRequest={({ url }) => {
-        if (isInAppUrl(url)) return true;
-        if (isGoogleSignIn(url)) {
-          WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url));
-          return false;
-        }
-        Linking.openURL(url).catch(() => {});
-        return false;
-      }}
-      onNavigationStateChange={(nav) => {
-        canGoBack.current = nav.canGoBack;
-        if (nav.loading) themesOpen.current = false;
-        if (!nav.loading) {
-          // Once per launch, after the first page is up: offer an update if there is one.
-          if (!updateChecked.current && isInAppUrl(nav.url)) {
-            updateChecked.current = true;
-            const fromNotification = takeUpdateLaunchRequest();
-            offerUpdate({ force: fromNotification, ignoreSnooze: fromNotification });
+    <ScrollView
+      style={styles.fill}
+      contentContainerStyle={styles.fill}
+      scrollEnabled={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          enabled={atTop && touchOk}
+          onRefresh={onRefresh}
+          colors={['#B01E1E']}
+          progressBackgroundColor={background}
+        />
+      }>
+      <WebView<object>
+        ref={ref}
+        source={{ uri: startUrl }}
+        style={{ backgroundColor: background }}
+        applicationNameForUserAgent={APP_UA_SUFFIX}
+        injectedJavaScriptBeforeContentLoaded={BEFORE_LOAD}
+        injectedJavaScript={INJECTED_JS + APP_UI_JS}
+        onMessage={onMessage}
+        onShouldStartLoadWithRequest={({ url }) => {
+          if (isInAppUrl(url)) return true;
+          if (isGoogleSignIn(url)) {
+            WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url));
+            return false;
           }
+          Linking.openURL(url).catch(() => {});
+          return false;
+        }}
+        onNavigationStateChange={(nav) => {
+          canGoBack.current = nav.canGoBack;
+          if (nav.loading) themesOpen.current = false;
+          if (!nav.loading) {
+            // Once per launch, after the first page is up: offer an update if there is one.
+            if (!updateChecked.current && isInAppUrl(nav.url)) {
+              updateChecked.current = true;
+              const fromNotification = takeUpdateLaunchRequest();
+              offerUpdate({ force: fromNotification, ignoreSnooze: fromNotification });
+            }
+          }
+        }}
+        onError={() => setFailed(true)}
+        onRenderProcessGone={() => {
+          clearMedia();
+          ref.current?.reload();
+        }}
+        startInLoadingState
+        renderLoading={() => (
+          <View style={[StyleSheet.absoluteFill, styles.center, { backgroundColor: background }]}>
+            <ActivityIndicator color="#888" />
+          </View>
+        )}
+        setSupportMultipleWindows={false}
+        javaScriptCanOpenWindowsAutomatically
+        domStorageEnabled
+        thirdPartyCookiesEnabled
+        allowsFullscreenVideo
+        mediaPlaybackRequiresUserAction={false}
+        overScrollMode="never"
+        // Local builds only: EXPO_PUBLIC_WEBVIEW_DEBUG=1 enables chrome://inspect for the site.
+        webviewDebuggingEnabled={process.env.EXPO_PUBLIC_WEBVIEW_DEBUG === '1'}
+        onScroll={(e: { nativeEvent: { contentOffset: { y: number } } }) =>
+          setAtTop(e.nativeEvent.contentOffset.y <= 0)
         }
-      }}
-      onError={() => setFailed(true)}
-      onRenderProcessGone={() => {
-        clearMedia();
-        ref.current?.reload();
-      }}
-      startInLoadingState
-      renderLoading={() => (
-        <View style={[StyleSheet.absoluteFill, styles.center, { backgroundColor: background }]}>
-          <ActivityIndicator color="#888" />
-        </View>
-      )}
-      setSupportMultipleWindows={false}
-      javaScriptCanOpenWindowsAutomatically
-      domStorageEnabled
-      thirdPartyCookiesEnabled
-      allowsFullscreenVideo
-      mediaPlaybackRequiresUserAction={false}
-      overScrollMode="never"
-      // Local builds only: EXPO_PUBLIC_WEBVIEW_DEBUG=1 enables chrome://inspect for the site.
-      webviewDebuggingEnabled={process.env.EXPO_PUBLIC_WEBVIEW_DEBUG === '1'}
-    />
+        onLoadEnd={() => setRefreshing(false)}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   errorText: { fontSize: 16, color: '#888' },
   retry: { borderWidth: 1, borderColor: '#888', borderRadius: 6, paddingHorizontal: 20, paddingVertical: 10 },
