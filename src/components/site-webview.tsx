@@ -156,7 +156,7 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
         return true;
       }
       if (themesOpen.current) {
-        ref.current?.injectJavaScript('window.__huevoThemes && window.__huevoThemes.close(); true;');
+        ref.current?.injectJavaScript('window.__huevoThemes && window.__huevoThemes.back(); true;');
         return true;
       }
       if (!canGoBack.current) return false;

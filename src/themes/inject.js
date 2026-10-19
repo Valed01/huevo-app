@@ -178,5 +178,15 @@
 
   window.addEventListener('pagehide', close);
 
-  window.__huevoThemes = { open: open, close: close, isOpen: function () { return !!sheet; } };
+  /** Android back: close the editor's color picker first, then the editor. */
+  function back() {
+    var frame = sheet && sheet.querySelector('iframe');
+    try {
+      var picker = frame && frame.contentWindow.__huevoColorPicker;
+      if (picker && picker.isOpen()) { picker.close(); return; }
+    } catch (e) {}
+    close();
+  }
+
+  window.__huevoThemes = { open: open, close: close, back: back, isOpen: function () { return !!sheet; } };
 })();

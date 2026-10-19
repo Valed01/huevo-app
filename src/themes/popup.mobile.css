@@ -568,3 +568,102 @@ html.huevo-app .color-item-controls input[type="text"] {
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- Color picker sheet (color-picker.js), built on the site's .hue-cp-* ---- */
+html.huevo-app .hue-cps {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+html.huevo-app .hue-cps-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+html.huevo-app .hue-cps-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: 94%;
+  margin: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  transform: translateY(100%);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+html.huevo-app .hue-cps.open .hue-cps-backdrop { opacity: 1; }
+html.huevo-app .hue-cps.open .hue-cps-panel { transform: none; }
+html.huevo-app .hue-cps-panel > .vk-card-title { flex: none; margin: 0; }
+html.huevo-app .hue-cps-body { overflow-y: auto; padding: 14px; }
+
+html.huevo-app .hue-cps-sv {
+  position: relative;
+  height: 180px;
+  border: 1px solid var(--line-strong);
+  background-image: linear-gradient(to top, #000, rgba(0, 0, 0, 0)), linear-gradient(to right, #fff, rgba(255, 255, 255, 0));
+  touch-action: none;
+  cursor: crosshair;
+}
+html.huevo-app .hue-cps-sv-thumb {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  box-sizing: border-box;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+html.huevo-app .hue-cps-hue {
+  position: relative;
+  height: 24px;
+  margin-top: 14px;
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
+  touch-action: none;
+  cursor: pointer;
+}
+html.huevo-app .hue-cps-hue-thumb {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 8px;
+  margin-left: -4px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+html.huevo-app .hue-cps-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+html.huevo-app .hue-cps-compare {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 72px;
+  height: 36px;
+  border: 1px solid var(--line-strong);
+  overflow: hidden;
+}
+html.huevo-app .hue-cps-compare i { flex: 1 1 0; }
+html.huevo-app .hue-cps-hex {
+  flex: 1 1 auto;
+  height: 36px !important;
+  font-size: 16px !important; /* 16px keeps Android from zooming in on focus */
+}
+html.huevo-app .hue-cps .hue-cp-label { margin: 16px 0 8px; }
+html.huevo-app .hue-cps .hue-cp-grid { margin: 0; }
+html.huevo-app .hue-cps-foot {
+  flex: none;
+  margin: 0;
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--line);
+}
+html.huevo-app .hue-cps-foot .vk-btn { flex: 1 1 0; height: 40px; }
+
+/* Bigger tap target for the swatch that opens the picker */
+html.huevo-app .color-swatch-wrap { width: 28px; height: 28px; cursor: pointer; }
+html.huevo-app .native-color-input { pointer-events: none; }

@@ -22,7 +22,7 @@ mkdirSync(out, { recursive: true });
 
 const SKIP = new Set(['manifest.json', 'NOTICE.md', 'README_FIREFOX.md']);
 cpSync(ext, out, { recursive: true, filter: (src) => !SKIP.has(src.split('/').pop()) });
-for (const f of ['chrome-shim.js', 'popup-head.js', 'popup-app.js', 'app-overrides.js', 'popup.mobile.css']) {
+for (const f of ['chrome-shim.js', 'popup-head.js', 'popup-app.js', 'color-picker.js', 'app-overrides.js', 'popup.mobile.css']) {
   cpSync(join(adapters, f), join(out, f));
 }
 
@@ -80,6 +80,7 @@ const stripEmoji = (text) => text.replace(EMOJI, '');
 const COPY = [
   ['btnDl.textContent = "📥";', 'btnDl.textContent = "Экспорт";'],
   ['btnDel.textContent = "✕";', 'btnDel.textContent = "Удалить";'],
+  ['Кликните на цветной квадрат для выбора цвета (с пипеткой):', 'Нажмите на квадратик, чтобы выбрать цвет.'],
   ['statusText.textContent = "Готово"', 'statusText.textContent = "Включены"'],
   ['statusText.textContent = "Откл"', 'statusText.textContent = "Выключены"'],
   ['Перетащите видео сюда (MP4 / WebM)', 'Выбрать видео'],
@@ -102,7 +103,7 @@ if (!popup.includes(css) || !popup.includes('<script src="themes.js"></script>')
 popup = popup
   .replace(css, `${css}\n  <link rel="stylesheet" href="popup.mobile.css">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <script src="popup-head.js"></script>`)
   .replace('<script src="themes.js"></script>',
-    '<script src="chrome-shim.js"></script>\n  <script src="popup-app.js"></script>\n  <script src="themes.js"></script>\n  <script src="app-overrides.js"></script>');
+    '<script src="chrome-shim.js"></script>\n  <script src="popup-app.js"></script>\n  <script src="color-picker.js"></script>\n  <script src="themes.js"></script>\n  <script src="app-overrides.js"></script>');
 writeFileSync(join(out, 'popup.html'), popup);
 
 console.log(`build-themes: ${out}`);
