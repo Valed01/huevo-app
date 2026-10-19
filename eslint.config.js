@@ -5,6 +5,7 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*'],
+    // src/themes and extensions/ are page scripts injected into the site (plain ES5).
+    ignores: ['dist/*', 'extensions/**', 'src/themes/**'],
   },
 ]);

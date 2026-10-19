@@ -3,8 +3,19 @@ import { ActivityIndicator, BackHandler, Linking, Pressable, StyleSheet, Text, V
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
 import { clearMedia, updateMedia } from 'huevo-media';
+// Importing installs the server for the bundled themes extension (before the WebView loads).
+import { saveToDownloads } from 'huevo-themes';
 
-import { APP_UA_SUFFIX, INJECTED_JS, isInAppUrl, MEDIA_SESSION_SHIM, SITE_URL } from '@/lib/site';
+import {
+  APP_UA_SUFFIX,
+  INJECTED_JS,
+  isInAppUrl,
+  MEDIA_SESSION_SHIM,
+  SITE_URL,
+  THEMES_LOADER,
+} from '@/lib/site';
+
+const BEFORE_LOAD = MEDIA_SESSION_SHIM + THEMES_LOADER;
 
 type Props = {
   background: string;
@@ -15,11 +26,16 @@ type Props = {
 export function SiteWebView({ background, onThemeColor }: Props) {
   const ref = useRef<WebView<object>>(null);
   const canGoBack = useRef(false);
+  const themesOpen = useRef(false);
   const [failed, setFailed] = useState(false);
 
   // Hardware back goes back in the site history; at the start page it exits the app.
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (themesOpen.current) {
+        ref.current?.injectJavaScript('window.__huevoThemes && window.__huevoThemes.close(); true;');
+        return true;
+      }
       if (!canGoBack.current) return false;
       ref.current?.goBack();
       return true;
@@ -34,6 +50,12 @@ export function SiteWebView({ background, onThemeColor }: Props) {
     try {
       const msg = JSON.parse(e.nativeEvent.data);
       if (msg?.type === 'theme' && typeof msg.color === 'string') onThemeColor(msg.color);
+      if (msg?.type === 'themes-sheet') themesOpen.current = !!msg.open;
+      if (msg?.type === 'download' && typeof msg.data === 'string') {
+        saveToDownloads(String(msg.name || 'file'), msg.data, String(msg.mime || 'application/octet-stream')).catch(
+          () => {},
+        );
+      }
       if (msg?.type === 'media') {
         if (msg.clear) clearMedia();
         else updateMedia(msg);
@@ -60,7 +82,7 @@ export function SiteWebView({ background, onThemeColor }: Props) {
       source={{ uri: SITE_URL }}
       style={{ backgroundColor: background }}
       applicationNameForUserAgent={APP_UA_SUFFIX}
-      injectedJavaScriptBeforeContentLoaded={MEDIA_SESSION_SHIM}
+      injectedJavaScriptBeforeContentLoaded={BEFORE_LOAD}
       injectedJavaScript={INJECTED_JS}
       onMessage={onMessage}
       onShouldStartLoadWithRequest={({ url }) => {
@@ -70,6 +92,7 @@ export function SiteWebView({ background, onThemeColor }: Props) {
       }}
       onNavigationStateChange={(nav) => {
         canGoBack.current = nav.canGoBack;
+        if (nav.loading) themesOpen.current = false;
       }}
       onError={() => setFailed(true)}
       onRenderProcessGone={() => {
@@ -89,6 +112,8 @@ export function SiteWebView({ background, onThemeColor }: Props) {
       allowsFullscreenVideo
       mediaPlaybackRequiresUserAction={false}
       overScrollMode="never"
+      // Local builds only: EXPO_PUBLIC_WEBVIEW_DEBUG=1 enables chrome://inspect for the site.
+      webviewDebuggingEnabled={process.env.EXPO_PUBLIC_WEBVIEW_DEBUG === '1'}
     />
   );
 }

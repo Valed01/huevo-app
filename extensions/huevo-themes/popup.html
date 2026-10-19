@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>huEVO Themes</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header identical to huEVO Games screenshot -->
+    <header class="app-header">
+      <div class="header-left">
+        <span class="logo-text">huEVO</span>
+        <span class="badge-tag">темы</span>
+      </div>
+      <div class="header-right">
+        <div class="status-indicator" id="status-toggle" title="Нажмите для включения/выключения тем">
+          <span class="status-dot"></span>
+          <span class="status-text" id="status-text">Готово</span>
+        </div>
+        <button id="btn-open-tab" class="btn-tab-mode" title="Развернуть во весь экран в новой вкладке (чтобы окно не закрывалось)">
+          ⛶
+        </button>
+      </div>
+    </header>
+
+    <!-- Prominent Big Action Button (Identical to "Перейти в каталог игр huEVO") -->
+    <div class="main-action-wrap">
+      <button class="main-action-btn" id="btn-quick-export" title="Экспортировать текущую тему в файл .hvthm">
+        <span class="action-icon">🎨</span>
+        <span class="action-title" id="main-action-title">Экспорт темы в .hvthm</span>
+      </button>
+    </div>
+
+    <!-- 3-Column Stats Bar (Identical to "16 всего игр | 0 в избранном | 4 запусков") -->
+    <div class="stats-bar">
+      <div class="stat-col" id="col-presets" title="Нажмите для перехода к готовым темам">
+        <span class="stat-num" id="stat-presets-count">8</span>
+        <span class="stat-label">готовых тем</span>
+      </div>
+      <div class="stat-col" id="col-saved" title="Нажмите для перехода к вашим сохраненным .hvthm темам">
+        <span class="stat-num" id="stat-saved-count">0</span>
+        <span class="stat-label">моих .hvthm</span>
+      </div>
+      <div class="stat-col" id="col-active" title="Текущая активная тема">
+        <span class="stat-num stat-active-text" id="stat-active-name">ВК 2007</span>
+        <span class="stat-label">активна</span>
+      </div>
+    </div>
+
+    <!-- Clean Navigation Tabs (No horizontal overflow) -->
+    <nav class="nav-tabs-strip">
+      <button class="tab-btn active" data-tab="tab-presets">Темы</button>
+      <button class="tab-btn" data-tab="tab-wallpaper">Обои</button>
+      <button class="tab-btn" data-tab="tab-custom">Цвета</button>
+      <button class="tab-btn" data-tab="tab-clock">Часы</button>
+      <button class="tab-btn" data-tab="tab-effects">Эффекты</button>
+    </nav>
+
+    <!-- Main Scrollable Content -->
+    <main class="content-scroll">
+      <!-- TAB 1: THEMES & .HVTHM -->
+      <section id="tab-presets" class="tab-pane active">
+        <!-- Save & Load .hvthm Card -->
+        <div class="section-heading">Сохранение и файл .hvthm</div>
+        <div class="hvthm-box">
+          <div class="hvthm-input-row">
+            <input type="text" id="input-save-theme-name" class="clean-input" placeholder="Название темы (напр. 'Мой Неон')" maxlength="30">
+            <button class="btn-blue-sm" id="btn-save-current-theme">💾 Сохранить</button>
+          </div>
+          <div class="hvthm-buttons-row">
+            <button class="btn-light-sm" id="btn-export-hvthm">📤 Экспорт .hvthm</button>
+            <label class="btn-light-sm">
+              📥 Загрузить .hvthm
+              <input type="file" id="file-import-hvthm" accept=".hvthm,.json" style="display:none;">
+            </label>
+          </div>
+          <div class="hvthm-dropzone" id="hvthm-dropzone">
+            <span>Перетащите сюда файл <b>.hvthm</b> для быстрой установки</span>
+          </div>
+        </div>
+
+        <!-- Saved Themes List -->
+        <div class="section-heading" id="saved-themes-header" style="display:none;">Мои сохраненные темы</div>
+        <div class="items-list" id="saved-themes-list">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Curated Presets List (Styled exactly like "Недавние игры") -->
+        <div class="section-heading">Каталог стилей оформления huEVO</div>
+        <div class="items-list" id="presets-list">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- TAB 2: WALLPAPERS & VIDEO -->
+      <section id="tab-wallpaper" class="tab-pane">
+        <div class="section-heading">Тип фонового медиа</div>
+        <div class="media-switch-row">
+          <label class="radio-label">
+            <input type="radio" name="bgType" value="image" id="bg-type-image" checked>
+            <span>🖼️ Картинка / GIF</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="bgType" value="video" id="bg-type-video">
+            <span>🎬 Видео (MP4 / WebM)</span>
+          </label>
+        </div>
+
+        <!-- Drag & Drop Upload Zone -->
+        <div class="dropzone-box" id="wallpaper-dropzone">
+          <input type="file" id="file-bg-image" accept="image/*" style="display:none;">
+          <input type="file" id="file-bg-video" accept="video/mp4,video/webm" style="display:none;">
+          <div class="dropzone-icon" id="dropzone-icon">📁</div>
+          <div class="dropzone-text" id="dropzone-text">
+            <b>Перетащите файл сюда</b>
+            <span>или нажмите для выбора (PNG, JPG, WebP, GIF, MP4)</span>
+          </div>
+        </div>
+
+        <!-- Active Wallpaper Status -->
+        <div class="wallpaper-status-card" id="wallpaper-preview-box" style="display:none;">
+          <div class="wp-thumb-wrap">
+            <img id="wallpaper-thumb" src="" alt="Обои" style="display:none;">
+            <video id="wallpaper-thumb-video" src="" autoplay loop muted playsinline style="display:none;"></video>
+          </div>
+          <div class="wp-info">
+            <div class="wp-title" id="wallpaper-status-text">Обои активны</div>
+            <button class="btn-danger-sm" id="btn-clear-bg">✕ Удалить</button>
+          </div>
+        </div>
+
+        <!-- URL Input -->
+        <div class="form-row">
+          <label class="field-label">Прямая ссылка (URL):</label>
+          <input type="text" id="input-bg-image" class="clean-input" placeholder="https://example.com/wallpaper.jpg">
+        </div>
+
+        <!-- Curated Wallpapers -->
+        <div class="form-row" id="curated-wallpapers-section">
+          <label class="field-label">Быстрые обои (1 клик):</label>
+          <div class="curated-grid" id="preset-wallpapers-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div class="section-heading">Настройка отображения фона</div>
+
+        <div class="slider-field">
+          <div class="slider-header">
+            <span>Прозрачность обоев (Opacity):</span>
+            <span class="slider-value" id="val-bg-opacity">100%</span>
+          </div>
+          <input type="range" id="range-bg-opacity" min="0.1" max="1" step="0.05" value="1.0">
+        </div>
+
+        <div class="slider-field">
+          <div class="slider-header">
+            <span>Затемнение (для читаемости):</span>
+            <span class="slider-value" id="val-bg-overlay">30%</span>
+          </div>
+          <input type="range" id="range-bg-overlay" min="0" max="0.85" step="0.05" value="0.3">
+        </div>
+
+        <div class="slider-field">
+          <div class="slider-header">
+            <span>Размытие (Blur):</span>
+            <span class="slider-value" id="val-bg-blur">0px</span>
+          </div>
+          <input type="range" id="range-bg-blur" min="0" max="25" step="1" value="0">
+        </div>
+
+        <div class="slider-field">
+          <div class="slider-header">
+            <span>Яркость:</span>
+            <span class="slider-value" id="val-bg-brightness">100%</span>
+          </div>
+          <input type="range" id="range-bg-brightness" min="30" max="150" step="5" value="100">
+        </div>
+
+        <div class="form-row">
+          <label class="field-label">Масштабирование:</label>
+          <select id="select-bg-size" class="clean-select">
+            <option value="cover">По размеру экрана (Cover)</option>
+            <option value="contain">Вписать целиком (Contain)</option>
+            <option value="repeat">Замостить плиткой (Repeat)</option>
+          </select>
+        </div>
+
+        <div class="section-heading">Матовое стекло карточек сайта</div>
+        <div class="slider-field">
+          <div class="slider-header">
+            <span>Прозрачность карточек:</span>
+            <span class="slider-value" id="val-card-opacity">90%</span>
+          </div>
+          <input type="range" id="range-card-opacity" min="0.2" max="1" step="0.05" value="0.9">
+        </div>
+        <div class="slider-field">
+          <div class="slider-header">
+            <span>Размытие под карточками:</span>
+            <span class="slider-value" id="val-card-blur">6px</span>
+          </div>
+          <input type="range" id="range-card-blur" min="0" max="25" step="1" value="6">
+        </div>
+
+        <div class="toggle-card" style="margin-top: 10px;">
+          <div class="toggle-info">
+            <span class="toggle-title">📑 Панель бокового меню</span>
+            <span class="toggle-desc">Подложка для меню слева, чтобы текст не сливался с обоями</span>
+          </div>
+          <label class="switch-toggle sm">
+            <input type="checkbox" id="toggle-sidebar-card">
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+
+        <div class="section-heading">Шапка сайта (Header)</div>
+        <div class="slider-field">
+          <div class="slider-header">
+            <span>Прозрачность шапки (Opacity):</span>
+            <span class="slider-value" id="val-header-opacity">100%</span>
+          </div>
+          <input type="range" id="range-header-opacity" min="0.1" max="1" step="0.05" value="1.0">
+        </div>
+        <div class="slider-field">
+          <div class="slider-header">
+            <span>Размытие шапки (Blur):</span>
+            <span class="slider-value" id="val-header-blur">0px</span>
+          </div>
+          <input type="range" id="range-header-blur" min="0" max="25" step="1" value="0">
+        </div>
+      </section>
+
+      <!-- TAB 3: CUSTOM COLORS -->
+      <section id="tab-custom" class="tab-pane">
+        <div class="color-top-bar">
+          <div class="color-hint-text">💡 Кликните на цветной квадрат для выбора цвета (с пипеткой):</div>
+          <div class="quick-schemes-row">
+            <span class="schemes-label">Быстрые схемы:</span>
+            <button type="button" class="btn-scheme-tag" data-scheme="vk">ВК 2007</button>
+            <button type="button" class="btn-scheme-tag" data-scheme="dark">Тёмная</button>
+            <button type="button" class="btn-scheme-tag" data-scheme="amoled">AMOLED</button>
+            <button type="button" class="btn-scheme-tag" data-scheme="neon">Неон</button>
+          </div>
+        </div>
+        <div class="color-cards-wrap" id="color-cards-list">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- TAB 4: CLOCK WIDGET -->
+      <section id="tab-clock" class="tab-pane">
+        <div class="section-heading">Виджет часов на сайте</div>
+
+        <div class="toggle-card">
+          <div class="toggle-info">
+            <span class="toggle-title">Показывать часы</span>
+            <span class="toggle-desc">Отображать время на страницах huEVO</span>
+          </div>
+          <label class="switch-toggle">
+            <input type="checkbox" id="toggle-clock-enabled">
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+
+        <!-- Live Preview like on the photo -->
+        <div class="clock-display-wrap">
+          <div class="clock-display-box" id="clock-live-display">
+            <div id="preview-clock-time">14:28</div>
+            <div id="preview-clock-date">среда, 12 октября</div>
+          </div>
+        </div>
+
+        <div class="section-heading">Формат и параметры</div>
+
+        <div class="form-row">
+          <label class="field-label">Позиция на сайте:</label>
+          <select id="select-clock-position" class="clean-select">
+            <option value="bottom-left">Снизу слева (как на фото)</option>
+            <option value="top-left">Сверху слева</option>
+            <option value="bottom-right">Снизу справа</option>
+            <option value="top-right">Сверху справа</option>
+            <option value="header">В шапке сайта</option>
+            <option value="sidebar">В боковом меню</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label class="field-label">Стиль отображения:</label>
+          <select id="select-clock-style" class="clean-select">
+            <option value="minimal">Минимализм (как на фото, без рамок)</option>
+            <option value="card">С полупрозрачной карточкой</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label class="field-label">Формат времени:</label>
+          <div class="clock-options-row">
+            <label class="radio-label">
+              <input type="radio" name="clockFormat" value="24" id="clock-format-24" checked>
+              <span>24 часа</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="clockFormat" value="12" id="clock-format-12">
+              <span>12 часов (AM/PM)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="check-clock-seconds">
+            <span>Показывать секунды (:00)</span>
+          </label>
+        </div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="check-clock-date" checked>
+            <span>Показывать дату (день недели и месяц)</span>
+          </label>
+        </div>
+
+        <div class="slider-field">
+          <div class="slider-header">
+            <span>Размер шрифта:</span>
+            <span class="slider-value" id="val-clock-size">52px</span>
+          </div>
+          <input type="range" id="range-clock-size" min="16" max="120" step="2" value="52">
+          <div class="slider-hints">
+            <span>16px</span>
+            <span>52px (Стандарт)</span>
+            <span>120px (Максимум)</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="field-label">Шрифт часов:</label>
+          <select id="select-clock-font" class="clean-select">
+            <option value="light">Тонкий</option>
+            <option value="tahoma">Tahoma (Классика ВК)</option>
+            <option value="digital">Электронный (Digital / Consolas)</option>
+            <option value="system">Системный</option>
+            <option value="custom">📁 Загрузить свой файл шрифта (.ttf, .otf, .woff)...</option>
+          </select>
+        </div>
+
+        <!-- Custom font upload box -->
+        <div class="form-row" id="clock-custom-font-box" style="display:none;">
+          <input type="file" id="file-clock-font" accept=".ttf,.otf,.woff,.woff2" style="display:none;">
+          <div class="hvthm-dropzone" id="clock-font-dropzone" style="margin-bottom:4px;">
+            <span id="clock-font-status-text">Нажмите или перетащите файл <b>.ttf / .otf / .woff</b></span>
+          </div>
+          <div class="font-active-row" id="clock-font-active-row" style="display:none; align-items:center; justify-content:space-between; padding:4px 6px; background:#f2f5f8; border:1px solid #d9e0e8; border-radius:2px;">
+            <span class="font-active-name" id="clock-font-name-label" style="font-weight:bold; color:#2b587a; font-size:10.5px;">Шрифт загружен</span>
+            <button class="btn-danger-sm" id="btn-clear-clock-font" title="Удалить свой шрифт">✕</button>
+          </div>
+          <div style="margin-top:3px; font-size:9.5px; color:#7f8a96;">
+            💡 Шрифт встроится в тему и сохранится в файл <b>.hvthm</b> при экспорте!
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: EFFECTS -->
+      <section id="tab-effects" class="tab-pane">
+        <div class="section-heading">Скругление углов (Border Radius)</div>
+        <div class="toggle-card" style="margin-bottom: 8px;">
+          <div class="toggle-info">
+            <span class="toggle-title">Скругление интерфейса</span>
+            <span class="toggle-desc">Включить или отключить скругление углов по всему сайту</span>
+          </div>
+          <label class="switch-toggle sm">
+            <input type="checkbox" id="toggle-border-radius" checked>
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+        <div class="slider-field">
+          <div class="slider-header">
+            <span>Радиус скругления:</span>
+            <span class="slider-value" id="val-border-radius">4px</span>
+          </div>
+          <input type="range" id="range-border-radius" min="0" max="20" step="1" value="4">
+          <div class="slider-hints">
+            <span>0px (Квадрат)</span>
+            <span>4px (ВК 2016)</span>
+            <span>20px (Круг)</span>
+          </div>
+        </div>
+
+        <div class="toggle-card" style="margin-top: 8px; margin-bottom: 8px;">
+          <div class="toggle-info">
+            <span class="toggle-title">🏛️ Скругление шапки (Header)</span>
+            <span class="toggle-desc">При отключении шапка сайта строго игнорирует скругление и остаётся прямоугольной</span>
+          </div>
+          <label class="switch-toggle sm">
+            <input type="checkbox" id="toggle-header-rounding" checked>
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+
+        <div class="toggle-card" style="margin-top: 8px; margin-bottom: 8px;">
+          <div class="toggle-info">
+            <span class="toggle-title">🟢 Значки «В сети» и уведомлений</span>
+            <span class="toggle-desc">Скруглять индикатор онлайна и счётчики уведомлений (выключите, чтобы оставить их квадратными)</span>
+          </div>
+          <label class="switch-toggle sm">
+            <input type="checkbox" id="toggle-badge-rounding" checked>
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+
+        <div class="toggle-card" style="margin-bottom: 8px;">
+          <div class="toggle-info">
+            <span class="toggle-title">💬 Обводка в чатах и диалогах</span>
+            <span class="toggle-desc">Контурные рамки вокруг диалогов и сообщений</span>
+          </div>
+          <label class="switch-toggle sm">
+            <input type="checkbox" id="toggle-chat-borders">
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+
+        <div class="toggle-card" style="margin-bottom: 8px;">
+          <div class="toggle-info">
+            <span class="toggle-title">🔲 Обводка карточек (границы)</span>
+            <span class="toggle-desc">Включить или отключить контурные линии блоков по всему сайту</span>
+          </div>
+          <label class="switch-toggle sm">
+            <input type="checkbox" id="toggle-card-borders" checked>
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+
+        <div class="section-heading">Шрифт интерфейса</div>
+        <div class="form-row">
+          <select id="select-font" class="clean-select">
+            <option value="tahoma">Tahoma (Классика ВК и WinXP)</option>
+            <option value="system">Системный UI</option>
+            <option value="inter">Inter</option>
+            <option value="comic-sans">Comic Sans</option>
+            <option value="courier">Courier New</option>
+            <option value="pixel">Pixel 8-bit</option>
+            <option value="custom">📁 Загрузить свой файл шрифта (.ttf, .otf, .woff)...</option>
+          </select>
+        </div>
+        <div class="form-row" id="custom-font-wrap" style="display:none;">
+          <input type="file" id="file-ui-font" accept=".ttf,.otf,.woff,.woff2" style="display:none;">
+          <div class="hvthm-dropzone" id="ui-font-dropzone" style="margin-bottom:4px;">
+            <span id="ui-font-status-text">Нажмите или перетащите файл <b>.ttf / .otf / .woff</b></span>
+          </div>
+          <div class="font-active-row" id="ui-font-active-row" style="display:none; align-items:center; justify-content:space-between; padding:4px 6px; background:#f2f5f8; border:1px solid #d9e0e8; border-radius:2px;">
+            <span class="font-active-name" id="ui-font-name-label" style="font-weight:bold; color:#2b587a; font-size:10.5px;">Шрифт загружен</span>
+            <button class="btn-danger-sm" id="btn-clear-ui-font" title="Удалить свой шрифт">✕</button>
+          </div>
+          <div style="margin-top:3px; font-size:9.5px; color:#7f8a96;">
+            💡 Шрифт применится ко всему сайту и сохранится в файл <b>.hvthm</b> при экспорте!
+          </div>
+        </div>
+
+        <div class="section-heading">Атмосферные эффекты</div>
+        <div class="toggle-card">
+          <div class="toggle-info">
+            <span class="toggle-title">📺 ЭЛТ Сканлайны</span>
+            <span class="toggle-desc">Полосы кинескопа старого монитора</span>
+          </div>
+          <label class="switch-toggle sm">
+            <input type="checkbox" id="toggle-crt">
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+
+        <div class="toggle-card">
+          <div class="toggle-info">
+            <span class="toggle-title">❄️ Падающий снег</span>
+            <span class="toggle-desc">Атмосферный снегопад поверх страниц</span>
+          </div>
+          <label class="switch-toggle sm">
+            <input type="checkbox" id="toggle-snow">
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+
+        <div class="toggle-card">
+          <div class="toggle-info">
+            <span class="toggle-title">🌈 Радужная шапка</span>
+            <span class="toggle-desc">Градиент в верхней панели</span>
+          </div>
+          <label class="switch-toggle sm">
+            <input type="checkbox" id="toggle-rainbow">
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+
+        <div class="toggle-card">
+          <div class="toggle-info">
+            <span class="toggle-title">🖼️ Картинка в логотипе</span>
+            <span class="toggle-desc">Отображать логотип huEVO в шапке сайта</span>
+          </div>
+          <label class="switch-toggle sm">
+            <input type="checkbox" id="toggle-logo-image" checked>
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+
+        <!-- Custom logo upload / URL -->
+        <div class="form-row" id="custom-logo-settings-box" style="margin-top: 2px;">
+          <input type="file" id="file-custom-logo" accept="image/*,.png,.jpg,.jpeg,.svg,.gif,.webp" style="display:none;">
+          <div class="hvthm-dropzone" id="logo-dropzone" style="margin-bottom: 4px; padding: 7px 10px;">
+            <span id="logo-status-text">Нажмите или перетащите файл логотипа <b>.png / .svg / .jpg / .gif</b></span>
+          </div>
+
+          <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+            <input type="text" id="input-custom-logo" class="clean-input" placeholder="Или ссылка (URL) на картинку логотипа..." style="font-size: 10px; padding: 4px 6px; flex: 1;">
+            <button type="button" class="btn-light-sm" id="btn-apply-logo-url" style="padding: 4px 7px;">OK</button>
+          </div>
+
+          <div class="font-active-row" id="logo-preview-card" style="display:none; align-items:center; justify-content:space-between; padding:4px 6px; background:#f2f5f8; border:1px solid #d9e0e8; border-radius:2px; margin-bottom:4px;">
+            <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+              <img id="logo-preview-thumb" src="" alt="Logo" style="height:22px; max-width:60px; object-fit:contain; border-radius:2px; background:rgba(0,0,0,0.06); padding:1px;">
+              <span id="logo-name-label" style="font-weight:bold; color:#2b587a; font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:170px;">Кастомный логотип активен</span>
+            </div>
+            <button type="button" class="btn-danger-sm" id="btn-clear-logo" title="Сбросить на логотип huEVO">✕</button>
+          </div>
+
+          <div class="checkbox-row" style="padding: 2px 0 4px 0;">
+            <label style="font-size: 10px; color: #45668e;">
+              <input type="checkbox" id="check-logo-original-colors" checked>
+              <span>Сохранять оригинальные цвета лого (без перекраски акцентом)</span>
+            </label>
+          </div>
+          <div style="font-size:9.5px; color:#7f8a96; line-height:1.2;">
+            💡 Логотип сохранится в конфигурацию темы и экспортируется в файл <b>.hvthm</b>!
+          </div>
+        </div>
+
+        <div class="section-heading">✨ Неоновая подсветка (Светяшки / Glow)</div>
+        <div class="toggle-card">
+          <div class="toggle-info">
+            <span class="toggle-title">Включить неоновое свечение</span>
+            <span class="toggle-desc">Мягкая неоновая подсветка выбранных элементов сайта</span>
+          </div>
+          <label class="switch-toggle sm">
+            <input type="checkbox" id="toggle-glow-enabled">
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+
+        <div id="glow-options-wrap" style="display: none; padding-bottom: 6px;">
+          <div class="form-row" style="display: flex; align-items: center; justify-content: space-between; padding-top: 2px; padding-bottom: 6px;">
+            <label class="field-label" style="margin: 0; font-weight: bold; color: #2b587a;">Цвет свечения:</label>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div class="color-swatch-wrap" style="width: 24px; height: 24px;" title="Выбрать цвет свечения">
+                <input type="color" class="native-color-input" id="picker-glow-color" value="#B01E1E">
+                <div class="color-swatch-preview" id="swatch-glow-color" style="background-color: #B01E1E;"></div>
+              </div>
+              <input type="text" class="color-hex-field" id="hex-glow-color" value="#B01E1E" maxlength="7" style="width: 64px; font-size: 10.5px;">
+              <button type="button" class="btn-scheme-tag" id="btn-glow-match-accent" title="Взять цвет из акцента темы">Как акцент</button>
+            </div>
+          </div>
+
+          <div style="padding: 0 12px; display: flex; flex-direction: column; gap: 5px;">
+            <label class="radio-label" style="font-weight: normal; font-size: 10.5px; color: #2b2b2b;">
+              <input type="checkbox" id="check-glow-header">
+              <span>🏛️ Шапка сайта (Header glow)</span>
+            </label>
+            <label class="radio-label" style="font-weight: normal; font-size: 10.5px; color: #2b2b2b;">
+              <input type="checkbox" id="check-glow-logo">
+              <span>🖼️ Логотип в шапке (Logo glow)</span>
+            </label>
+            <label class="radio-label" style="font-weight: normal; font-size: 10.5px; color: #2b2b2b;">
+              <input type="checkbox" id="check-glow-buttons">
+              <span>🔘 Кнопки (Buttons glow)</span>
+            </label>
+            <label class="radio-label" style="font-weight: normal; font-size: 10.5px; color: #2b2b2b;">
+              <input type="checkbox" id="check-glow-cards">
+              <span>🗂️ Карточки контента и стена (Cards glow)</span>
+            </label>
+            <label class="radio-label" style="font-weight: normal; font-size: 10.5px; color: #2b2b2b;">
+              <input type="checkbox" id="check-glow-inputs">
+              <span>✏️ Поля ввода и поиск (Inputs glow)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="section-heading">🔔 Звуки уведомлений</div>
+        <div class="toggle-card">
+          <div class="toggle-info">
+            <span class="toggle-title">Кастомный звук уведомлений</span>
+            <span class="toggle-desc">Заменять стандартный звук сообщений</span>
+          </div>
+          <label class="switch-toggle sm">
+            <input type="checkbox" id="toggle-sound-enabled" checked>
+            <span class="toggle-pill"></span>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label class="field-label">Выбор звука:</label>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <select id="select-notify-sound" class="clean-select" style="flex:1;">
+              <option value="vk">ВКонтакте (Классический «Чпок»)</option>
+              <option value="icq">ICQ («О-оу!»)</option>
+              <option value="telegram">Telegram (Щелчок)</option>
+              <option value="discord">Discord (Дзынь)</option>
+              <option value="winxp">Windows XP (Уведомление)</option>
+              <option value="retro8bit">8-Bit Retro (Монетка)</option>
+              <option value="jdf">JDFhuEVO (Dark Strike)</option>
+              <option value="custom">📁 Загрузить свой звук (.mp3, .wav, .ogg)...</option>
+              <option value="mute">🔇 Без звука (Отключить звук)</option>
+            </select>
+            <button type="button" class="btn-blue-sm" id="btn-play-sound" title="Прослушать звук" style="padding:6px 10px; font-size:12px;">▶</button>
+          </div>
+        </div>
+
+        <!-- Custom sound upload dropzone -->
+        <div class="form-row" id="custom-sound-upload-box" style="display:none;">
+          <input type="file" id="file-custom-sound" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac" style="display:none;">
+          <div class="hvthm-dropzone" id="sound-dropzone" style="margin-bottom:4px; padding:8px 10px;">
+            <span id="sound-status-text">Нажмите или перетащите аудиофайл <b>.mp3 / .wav / .ogg</b></span>
+          </div>
+          <div class="font-active-row" id="sound-active-row" style="display:none; align-items:center; justify-content:space-between; padding:4px 6px; background:#f2f5f8; border:1px solid #d9e0e8; border-radius:2px;">
+            <span class="font-active-name" id="sound-name-label" style="font-weight:bold; color:#2b587a; font-size:10.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:210px;">Звук загружен</span>
+            <button type="button" class="btn-danger-sm" id="btn-clear-custom-sound" title="Удалить свой звук">✕</button>
+          </div>
+        </div>
+
+        <div class="slider-field">
+          <div class="slider-header">
+            <span>Громкость уведомлений:</span>
+            <span class="slider-value" id="val-sound-volume">80%</span>
+          </div>
+          <input type="range" id="range-sound-volume" min="0" max="100" step="5" value="80">
+        </div>
+
+        <div class="section-heading-row" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px 6px 12px;">
+          <div class="section-heading" style="padding:0;">Пользовательский CSS</div>
+          <div style="display:flex; gap:5px;">
+            <input type="file" id="file-custom-css" accept=".css,text/css" style="display:none;">
+            <button type="button" class="btn-blue-sm" id="btn-load-css" title="Загрузить готовый файл .css с компьютера">📁 ЗАГРУЗИТЬ</button>
+            <button type="button" class="btn-light-sm" id="btn-clear-css" title="Очистить CSS">Очистить</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <textarea id="textarea-custom-css" class="clean-textarea" placeholder="/* Ваши персональные CSS стили или нажмите «ЗАГРУЗИТЬ» для выбора файла .css */"></textarea>
+          <div id="css-file-status" style="display:none; font-size:10px; color:#2b587a; margin-top:4px; font-weight:bold;"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer identical to huEVO Games screenshot -->
+    <footer class="app-footer">
+      <a href="#" class="footer-link" id="btn-reset">↻ Обновить сброс</a>
+      <span class="footer-credit" title="huEVO Themes by neriusshadow huEVO SWAGdev">v1.1 (VK 2010 Style)</span>
+    </footer>
+  </div>
+
+  <script src="themes.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

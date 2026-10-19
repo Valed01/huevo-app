@@ -151,3 +151,22 @@ export const MEDIA_SESSION_SHIM = `
   true;
 })();
 `;
+
+/**
+ * Loads the bundled huEVO Themes extension (served by the app at
+ * /__huevo_themes__/, see modules/huevo-themes) at document start, like the
+ * extension's content scripts. Synchronous so the theme applies before the page paints.
+ */
+export const THEMES_LOADER = `
+(function () {
+  if (window.__huevoThemesLoaded || !/(^|\\.)huevo\\.su$/.test(location.hostname)) return;
+  window.__huevoThemesLoaded = true;
+  try {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', location.origin + '/__huevo_themes__/content-bundle.js', false);
+    xhr.send();
+    if (xhr.status === 200) (0, eval)(xhr.responseText + '\\n//# sourceURL=huevo-themes-bundle.js');
+  } catch (e) {}
+  true;
+})();
+`;

@@ -1,0 +1,81 @@
+{
+  "manifest_version": 3,
+  "name": "huEVO Themes \u2014 \u0422\u0435\u043c\u044b \u043e\u0444\u043e\u0440\u043c\u043b\u0435\u043d\u0438\u044f",
+  "version": "1.1.0",
+  "description": "\u0421\u0442\u0438\u043b\u044c\u043d\u044b\u0435 \u0442\u0435\u043c\u044b \u043e\u0444\u043e\u0440\u043c\u043b\u0435\u043d\u0438\u044f, \u043e\u0431\u043e\u0438 \u0438 \u043a\u0430\u0441\u0442\u043e\u043c\u0438\u0437\u0430\u0446\u0438\u044f \u0434\u043b\u044f \u0441\u043e\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0439 \u0441\u0435\u0442\u0438 huEVO (VK 2007, Cyberpunk, Dracula, Nord, \u041a\u0430\u0441\u0442\u043e\u043c\u043d\u044b\u0435 \u043e\u0431\u043e\u0438 \u0438 \u044d\u0444\u0444\u0435\u043a\u0442\u044b).",
+  "author": "neriusshadow huEVO SWAGdev",
+  "permissions": [
+    "storage",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "*://huevo.su/*",
+    "*://*.huevo.su/*",
+    "*://huevo.departament.site/*",
+    "*://*.huevo.departament.site/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "huevo_logo.png",
+        "icons/*",
+        "jdflag.mp4",
+        "jdflag_avatar.png",
+        "jdflag_logo.png",
+        "sounds/*",
+        "whiskas_logo.png"
+      ],
+      "matches": [
+        "*://huevo.su/*",
+        "*://*.huevo.su/*",
+        "*://huevo.departament.site/*",
+        "*://*.huevo.departament.site/*"
+      ]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "\u0422\u0435\u043c\u044b huEVO",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://huevo.su/*",
+        "*://*.huevo.su/*",
+        "*://huevo.departament.site/*",
+        "*://*.huevo.departament.site/*"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "js": [
+        "themes.js",
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "huevo-themes@departament.site",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  }
+}

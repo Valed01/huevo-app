@@ -1,0 +1,26 @@
+diff --git a/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewClient.java b/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewClient.java
+--- a/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewClient.java
++++ b/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewClient.java
+@@ -36,6 +36,22 @@
+ 
+ public class RNCWebViewClient extends WebViewClient {
+     private static String TAG = "RNCWebViewClient";
++
++    /**
++     * huevo-app: lets a native module serve some requests itself (set via reflection).
++     * Return null to let the request go to the network as usual.
++     */
++    public static volatile java.util.function.BiFunction<WebView, android.webkit.WebResourceRequest, android.webkit.WebResourceResponse> requestInterceptor = null;
++
++    @Override
++    public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, android.webkit.WebResourceRequest request) {
++        java.util.function.BiFunction<WebView, android.webkit.WebResourceRequest, android.webkit.WebResourceResponse> interceptor = requestInterceptor;
++        if (interceptor != null) {
++            android.webkit.WebResourceResponse response = interceptor.apply(view, request);
++            if (response != null) return response;
++        }
++        return super.shouldInterceptRequest(view, request);
++    }
+     protected static final int SHOULD_OVERRIDE_URL_LOADING_TIMEOUT = 250;
+ 
+     protected boolean mLastLoadFailed = false;

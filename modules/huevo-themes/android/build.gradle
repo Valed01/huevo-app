@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'su.huevo'
+version = '0.1.0'
+
+android {
+  namespace "su.huevo.themes"
+  defaultConfig {
+    versionCode 1
+    versionName '0.1.0'
+    consumerProguardFiles 'proguard-rules.pro'
+  }
+  androidResources {
+    // Served to the WebView with byte ranges (video seeking), so keep media uncompressed.
+    noCompress += ['mp4', 'mp3', 'png']
+  }
+}

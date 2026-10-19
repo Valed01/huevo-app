@@ -20,6 +20,8 @@
 - музыка с сайта в шторке и на экране блокировки: обложка, пауза, следующий/предыдущий трек, перемотка.
   Плеер сайта публикует трек через `navigator.mediaSession`, которого в Android WebView нет: приложение
   подставляет свою реализацию и показывает нативное медиа-уведомление (`modules/huevo-media`, Kotlin + MediaSession);
+- редактор тем: встроенное расширение [huEVO Themes](extensions/huevo-themes/NOTICE.md) by neriusshadow (с разрешения автора).
+  Пункт «Темы оформления» в боковом меню, меню аватарки и «Настройки → Оформление»; по умолчанию тема «Стандартная» (сайт без изменений);
 - к User-Agent добавлено `huEVOApp/<версия>`, чтобы админы видели трафик приложения.
 
 ```
@@ -29,6 +31,11 @@ src/
   components/site-webview.tsx
   lib/site.ts              адрес сайта, User-Agent, инжекты (theme-color, mediaSession)
 modules/huevo-media/       нативный модуль: MediaSession + foreground-сервис с уведомлением плеера
+modules/huevo-themes/      нативный модуль: отдаёт файлы тем по https://huevo.su/__huevo_themes__/, сохраняет экспорт
+extensions/huevo-themes/   расширение huEVO Themes без изменений
+src/themes/                адаптация расширения: chrome.* API, кнопки в меню, мобильный вид редактора
+scripts/build-themes.mjs   собирает расширение в ассеты модуля (запускается при npm install)
+patches/                   patch-package: хук перехвата запросов в react-native-webview
 ```
 
 ## Запуск
@@ -44,6 +51,9 @@ npm run android        # expo run:android: собрать и поставить 
 Без локального Android SDK можно собрать в облаке: `npx eas-cli@latest build -p android --profile development`.
 
 Проверки: `npm run typecheck && npm run lint`.
+
+После правок в `extensions/` или `src/themes/` пересоберите ассеты: `npm run themes`.
+Отладка страницы в `chrome://inspect`: соберите с `EXPO_PUBLIC_WEBVIEW_DEBUG=1`.
 
 ## Сборка в GitHub Actions
 

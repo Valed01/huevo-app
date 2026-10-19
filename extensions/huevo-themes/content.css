@@ -1,0 +1,847 @@
+/* ====================================================================
+   huEVO Themes — Базовые эффекты, оверлеи, видео и часы
+   by neriusshadow huEVO SWAGdev
+   ==================================================================== */
+
+/* Полноэкранный контейнер пользовательских обоев (картинка/гиф) */
+#huevo-theme-wallpaper {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  z-index: -9999 !important;
+  pointer-events: none !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  transition: opacity 0.3s ease, filter 0.3s ease !important;
+}
+
+/* Полноэкранный контейнер видео-обоев (MP4 / WebM) */
+#huevo-theme-video {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  z-index: -9999 !important;
+  object-fit: cover !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  transition: opacity 0.3s ease, filter 0.3s ease !important;
+}
+
+/* Затемняющий/тонирующий слой поверх обоев */
+#huevo-theme-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  z-index: -9998 !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  transition: background-color 0.3s ease !important;
+}
+
+/* Эффект ЭЛТ-монитора / CRT scanlines */
+#huevo-crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  pointer-events: none;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.03),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 255, 0, 0.03)
+  );
+  background-size: 100% 4px, 6px 100%;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.4);
+  opacity: 0.85;
+}
+
+/* Канвас для эффекта снегопада */
+#huevo-snow-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99998;
+  pointer-events: none;
+}
+
+/* ====================================================================
+   Виджет часов (Минималистичный стиль как на фото и классический)
+   ==================================================================== */
+.huevo-clock-widget {
+  position: fixed;
+  z-index: 10000;
+  display: inline-flex;
+  flex-direction: column;
+  user-select: none;
+  pointer-events: none;
+  color: #ffffff;
+  line-height: 1.05;
+  transition: all 0.2s ease;
+}
+
+/* Минималистичный стиль как на скриншоте (без рамок, прозрачный фон с мягкой тенью) */
+.huevo-clock-widget.style-minimal {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8), 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+/* Стиль с полупрозрачной карточкой */
+.huevo-clock-widget.style-card {
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Шрифты */
+.huevo-clock-widget.font-light,
+.huevo-clock-widget.font-system {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.huevo-clock-widget.font-tahoma {
+  font-family: Tahoma, Arial, sans-serif;
+}
+
+.huevo-clock-widget.font-digital {
+  font-family: 'Courier New', 'Consolas', monospace;
+  letter-spacing: 1px;
+}
+
+.huevo-clock-widget.font-custom {
+  font-family: 'HuevoClockCustomFont', -apple-system, sans-serif;
+}
+
+.huevo-clock-widget.font-custom .huevo-clock-time {
+  font-weight: normal;
+}
+
+.huevo-clock-widget.font-custom .huevo-clock-date {
+  font-weight: normal;
+}
+
+.huevo-clock-time {
+  font-weight: 200;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  line-height: 0.95;
+}
+
+.huevo-clock-date {
+  font-size: 0.32em;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.78);
+  margin-top: 5px;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+  text-transform: lowercase;
+}
+
+/* Позиционирование часов */
+.huevo-clock-pos-bottom-left {
+  bottom: 40px;
+  left: 45px;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.huevo-clock-pos-top-left {
+  top: 30px;
+  left: 45px;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.huevo-clock-pos-bottom-right {
+  bottom: 40px;
+  right: 45px;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.huevo-clock-pos-top-right {
+  top: 30px;
+  right: 45px;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.huevo-clock-pos-sidebar {
+  top: 75px;
+  left: 20px;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.huevo-clock-pos-header {
+  top: 7px;
+  right: 160px;
+  align-items: center;
+  text-align: center;
+}
+
+/* ====================================================================
+   Защита и стилизация реакций, эмодзи и кнопок чата huEVO
+   ==================================================================== */
+/* 1. Сброс заливки для всех вспомогательных кнопок чата */
+#chat-form .vk-chat-row button,
+#chat-form .vk-chat-row .vk-attach-btn,
+#chat-form .vk-chat-row a,
+.vk-chat-row button,
+.vk-chat-row a,
+.vk-attach-btn,
+.vk-attach-item,
+.vk-attach-item button,
+.hue-cfrom .hue-cfrom-btn,
+.vk-link-btn,
+.hue-stk-btn,
+#hue-stk-pop,
+.hs-emoji,
+[class*="reaction"],
+[class*="Reaction"],
+[class*="reactions"],
+[class*="Reactions"],
+.im-reactions,
+.reactions-box,
+.reactions_box,
+.reactions_menu,
+.reactions-menu,
+.im-mess--reactions,
+.im-mess--reaction,
+.im-mess--action,
+.im-mess--actions,
+.im-mess--actions button,
+.im-mess button,
+.im_msg button,
+.im_mess button,
+#emoji-panel button,
+.emoji_item,
+.emoji-btn,
+.emoji_btn,
+.like_btn,
+button[class*="react"],
+button[class*="React"],
+button[class*="emoji"],
+button[class*="Emoji"],
+button[class*="smile"],
+button[class*="action"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 4px !important;
+  min-width: unset !important;
+  line-height: 1 !important;
+  text-shadow: none !important;
+  filter: none !important;
+  text-transform: none !important;
+}
+
+/* 2. Контейнер всплывающего бара реакций huEVO (10 эмодзи) */
+#hue-react-pick,
+html.hue-dark #hue-react-pick,
+.theme-modern #hue-react-pick {
+  background: rgba(30, 31, 35, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 24px !important;
+  padding: 4px 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
+  align-items: center !important;
+  gap: 4px !important;
+  z-index: 1000 !important;
+}
+
+#hue-react-pick:not([style*="display: none"]):not([style*="display:none"]):not(.hidden) {
+  display: inline-flex !important;
+}
+
+/* 3. Кнопки реакций внутри бара */
+#hue-react-pick button,
+html.hue-dark #hue-react-pick button,
+.theme-modern #hue-react-pick button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  max-width: 28px !important;
+  max-height: 28px !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  text-shadow: none !important;
+  filter: none !important;
+  text-transform: none !important;
+  transition: transform 0.15s ease, background-color 0.15s ease !important;
+}
+
+#hue-react-pick button:hover,
+html.hue-dark #hue-react-pick button:hover,
+.theme-modern #hue-react-pick button:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  transform: scale(1.25) !important;
+}
+
+#hue-react-pick button.mine,
+html.hue-dark #hue-react-pick button.mine {
+  background-color: rgba(176, 30, 30, 0.4) !important;
+}
+
+/* 4. Кнопка вызова реакций на сообщении (смайл при наведении) */
+#hue-react-btn,
+button#hue-react-btn,
+html.hue-dark #hue-react-btn,
+.theme-modern #hue-react-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  cursor: pointer !important;
+  text-shadow: none !important;
+  filter: none !important;
+  transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+#hue-react-btn:hover,
+button#hue-react-btn:hover,
+html.hue-dark #hue-react-btn:hover,
+.theme-modern #hue-react-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 5. Чипы уже выставленных реакций под сообщением */
+.hue-react,
+a.hue-react,
+button.hue-react,
+html.hue-dark .hue-react {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 2px 8px !important;
+  margin: 2px !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 12px !important;
+  color: inherit !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease !important;
+}
+
+.hue-react:hover,
+a.hue-react:hover,
+button.hue-react:hover,
+html.hue-dark .hue-react:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.hue-react.mine,
+a.hue-react.mine,
+button.hue-react.mine,
+html.hue-dark .hue-react.mine {
+  background-color: #b01e1e !important;
+  color: #ffffff !important;
+}
+
+/* 6. Реакции в контекстных меню */
+#hue-msg-bar .hue-bar-reacts a,
+#hue-msg-menu .hmm-reacts a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 4px !important;
+  border-radius: 4px !important;
+  transition: background-color 0.15s ease !important;
+}
+
+#hue-msg-bar .hue-bar-reacts a:hover,
+#hue-msg-menu .hmm-reacts a:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ====================================================================
+   1. Фикс меню: запрет переноса строк при активной/жирной вкладке
+   ==================================================================== */
+#sidebar-nav a,
+#side_bar a,
+.side_bar a,
+.left_row,
+a.left_row,
+.side-link,
+.vk-menu-item,
+#sidebar-cell a,
+#huevo-sidebar-panel a {
+  white-space: nowrap !important;
+  flex-wrap: nowrap !important;
+  overflow: visible !important;
+}
+
+#sidebar-nav a *,
+#side_bar a *,
+.side_bar a *,
+.left_row *,
+a.left_row *,
+.side-link *,
+.vk-menu-item *,
+#sidebar-cell a *,
+#huevo-sidebar-panel a * {
+  white-space: nowrap !important;
+}
+
+/* ====================================================================
+   2. Выравнивание подложки бокового меню (ТОЛЬКО когда включена настройка)
+   ==================================================================== */
+#sidebar-cell,
+td#sidebar-cell {
+  vertical-align: top !important;
+  padding-top: 15px !important; /* Дефолтная позиция меню без подложки */
+}
+
+/* Только при включенной подложке (Панель бокового меню) выравниваем её по карточкам контента и увеличиваем */
+html[data-huevo-sidebar-card="true"] #sidebar-cell,
+html[data-huevo-sidebar-card="true"] td#sidebar-cell {
+  vertical-align: top !important;
+  padding-top: 13px !important;
+  width: 185px !important;
+  min-width: 185px !important;
+}
+
+html[data-huevo-sidebar-card="true"] #huevo-sidebar-panel,
+html[data-huevo-sidebar-card="true"] .huevo-sidebar-panel {
+  margin-top: 0 !important;
+  height: auto !important;
+  min-height: auto !important;
+  width: 100% !important;
+  min-width: 185px !important;
+  padding: 12px 14px !important;
+  box-sizing: border-box !important;
+}
+
+html[data-huevo-sidebar-card="true"] #huevo-sidebar-panel #sidebar-nav td {
+  padding: 2px 0 !important;
+}
+
+html[data-huevo-sidebar-card="true"] #huevo-sidebar-panel #sidebar-nav td > a {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 5px 8px !important;
+  box-sizing: border-box !important;
+}
+
+html[data-huevo-sidebar-card="true"] #huevo-sidebar-panel #sidebar-nav .count,
+html[data-huevo-sidebar-card="true"] #huevo-sidebar-panel #sidebar-nav .badge,
+html[data-huevo-sidebar-card="true"] #huevo-sidebar-panel #sidebar-nav .left_count {
+  margin-left: auto !important;
+}
+
+html[data-huevo-sidebar-card="true"] #huevo-sidebar-panel .hue-side-foot,
+html[data-huevo-sidebar-card="true"] #huevo-sidebar-panel #sidebar-foot {
+  margin-top: 10px !important;
+  padding-top: 8px !important;
+  font-size: 11px !important;
+  line-height: 1.5 !important;
+  opacity: 0.75 !important;
+}
+
+html[data-huevo-sidebar-card="true"] #huevo-sidebar-panel .hue-side-foot a,
+html[data-huevo-sidebar-card="true"] #huevo-sidebar-panel #sidebar-foot a {
+  display: inline !important;
+  padding: 0 !important;
+  font-size: inherit !important;
+}
+
+/* ====================================================================
+   3. Защита иконок от обрезания по краям при любом скруглении
+   ==================================================================== */
+svg,
+svg *,
+path,
+polygon,
+circle,
+rect,
+g,
+i,
+[class*="icon"],
+[class*="Icon"],
+.nav-icon,
+.side-icon,
+#sidebar-nav i,
+#sidebar-nav svg,
+#sidebar-nav img,
+#sidebar-cell i,
+#sidebar-cell svg,
+#sidebar-cell img,
+.left_row i,
+.left_row svg,
+.left_row img {
+  border-radius: 0 !important;
+  overflow: visible !important;
+}
+
+/* ====================================================================
+   4. Скругление элементов шапки сайта
+   ==================================================================== */
+html:not([data-huevo-header-no-round="true"]) #mh-bar,
+html:not([data-huevo-header-no-round="true"]) #topbar-table,
+html:not([data-huevo-header-no-round="true"]) .theme-modern #mh-bar,
+html:not([data-huevo-header-no-round="true"]) table[bgcolor="#3A3A3A"],
+html:not([data-huevo-header-no-round="true"]) table[bgcolor="#2F3033"],
+html:not([data-huevo-header-no-round="true"]) #ap-header-wrap {
+  border-radius: 0 0 var(--huevo-header-radius, var(--huevo-radius, 4px)) var(--huevo-header-radius, var(--huevo-radius, 4px)) !important;
+}
+
+html:not([data-huevo-header-no-round="true"]) .mh-btn,
+html:not([data-huevo-header-no-round="true"]) .theme-modern .mh-btn,
+html:not([data-huevo-header-no-round="true"]) .theme-modern .mh-user-btn,
+html:not([data-huevo-header-no-round="true"]) #mh-bar button,
+html:not([data-huevo-header-no-round="true"]) #topbar-table button,
+html:not([data-huevo-header-no-round="true"]) #mh-bar input,
+html:not([data-huevo-header-no-round="true"]) #topbar-table input,
+html:not([data-huevo-header-no-round="true"]) #mh-bar .mh-btn,
+html:not([data-huevo-header-no-round="true"]) #topbar-table .mh-btn,
+html:not([data-huevo-header-no-round="true"]) [class*="mh-search"],
+html:not([data-huevo-header-no-round="true"]) #mh-search,
+html:not([data-huevo-header-no-round="true"]) .mh-search-input,
+html:not([data-huevo-header-no-round="true"]) #topbar-table a.mh-btn,
+html:not([data-huevo-header-no-round="true"]) #mh-bar a.mh-btn {
+  border-radius: var(--huevo-header-radius, var(--huevo-radius, 4px)) !important;
+}
+
+html[data-huevo-header-no-round="true"] {
+  --huevo-header-radius: 0px !important;
+}
+
+html[data-huevo-header-no-round="true"] #mh-bar,
+html[data-huevo-header-no-round="true"] #topbar-table,
+html[data-huevo-header-no-round="true"] #topbar-table td,
+html[data-huevo-header-no-round="true"] #topbar-table tr,
+html[data-huevo-header-no-round="true"] .theme-modern #mh-bar,
+html[data-huevo-header-no-round="true"] table[bgcolor="#3A3A3A"],
+html[data-huevo-header-no-round="true"] table[bgcolor="#2F3033"],
+html[data-huevo-header-no-round="true"] #ap-header-wrap,
+html[data-huevo-header-no-round="true"] header,
+html[data-huevo-header-no-round="true"] .header,
+html[data-huevo-header-no-round="true"] #header,
+html[data-huevo-header-no-round="true"] #vk-header,
+html[data-huevo-header-no-round="true"] #mh-bar *,
+html[data-huevo-header-no-round="true"] #topbar-table *,
+html[data-huevo-header-no-round="true"] table[bgcolor="#3A3A3A"] *,
+html[data-huevo-header-no-round="true"] table[bgcolor="#2F3033"] *,
+html[data-huevo-header-no-round="true"] #ap-header-wrap *,
+html[data-huevo-header-no-round="true"] .mh-btn,
+html[data-huevo-header-no-round="true"] .theme-modern .mh-btn,
+html[data-huevo-header-no-round="true"] .theme-modern .mh-user-btn,
+html[data-huevo-header-no-round="true"] #mh-bar button,
+html[data-huevo-header-no-round="true"] #topbar-table button,
+html[data-huevo-header-no-round="true"] #mh-bar input,
+html[data-huevo-header-no-round="true"] #topbar-table input,
+html[data-huevo-header-no-round="true"] [class*="mh-search"],
+html[data-huevo-header-no-round="true"] #mh-search,
+html[data-huevo-header-no-round="true"] .mh-search-input {
+  border-radius: 0px !important;
+}
+
+/* ====================================================================
+   5. Скругление для значков онлайн и бейджей
+   ==================================================================== */
+html:not([data-huevo-badge-no-round="true"]) .vk-dot-online,
+html:not([data-huevo-badge-no-round="true"]) .vk-av-online,
+html:not([data-huevo-badge-no-round="true"]) .status-online,
+html:not([data-huevo-badge-no-round="true"]) [class*="online-dot"],
+html:not([data-huevo-badge-no-round="true"]) [class*="online_dot"],
+html:not([data-huevo-badge-no-round="true"]) [class*="online-badge"],
+html:not([data-huevo-badge-no-round="true"]) [class*="online_badge"],
+html:not([data-huevo-badge-no-round="true"]) .online_status,
+html:not([data-huevo-badge-no-round="true"]) .mg-online,
+html:not([data-huevo-badge-no-round="true"]) [class*="nim-dialog--online"],
+html:not([data-huevo-badge-no-round="true"]) .hue-vmark {
+  border-radius: 50% !important;
+}
+html:not([data-huevo-badge-no-round="true"]) .hue-badge,
+html:not([data-huevo-badge-no-round="true"]) .tab-badge,
+html:not([data-huevo-badge-no-round="true"]) .tab_badge,
+html:not([data-huevo-badge-no-round="true"]) .counts_module .count,
+html:not([data-huevo-badge-no-round="true"]) .profile_counters .count,
+html:not([data-huevo-badge-no-round="true"]) .left_count,
+html:not([data-huevo-badge-no-round="true"]) .unread-count,
+html:not([data-huevo-badge-no-round="true"]) .unread_count,
+html:not([data-huevo-badge-no-round="true"]) #mh-notif-count,
+html:not([data-huevo-badge-no-round="true"]) .mh-notif-badge,
+html:not([data-huevo-badge-no-round="true"]) #sidebar-nav .count,
+html:not([data-huevo-badge-no-round="true"]) #sidebar-nav .badge,
+html:not([data-huevo-badge-no-round="true"]) #sidebar-cell .count,
+html:not([data-huevo-badge-no-round="true"]) #sidebar-cell .badge {
+  border-radius: 8px !important;
+}
+
+html[data-huevo-badge-no-round="true"] .vk-dot-online,
+html[data-huevo-badge-no-round="true"] .vk-av-online,
+html[data-huevo-badge-no-round="true"] .status-online,
+html[data-huevo-badge-no-round="true"] [class*="online-dot"],
+html[data-huevo-badge-no-round="true"] [class*="online_dot"],
+html[data-huevo-badge-no-round="true"] [class*="online-badge"],
+html[data-huevo-badge-no-round="true"] [class*="online_badge"],
+html[data-huevo-badge-no-round="true"] .online_status,
+html[data-huevo-badge-no-round="true"] .mg-online,
+html[data-huevo-badge-no-round="true"] [class*="nim-dialog--online"],
+html[data-huevo-badge-no-round="true"] .hue-vmark,
+html[data-huevo-badge-no-round="true"] .hue-badge,
+html[data-huevo-badge-no-round="true"] .tab-badge,
+html[data-huevo-badge-no-round="true"] .tab_badge,
+html[data-huevo-badge-no-round="true"] .counts_module .count,
+html[data-huevo-badge-no-round="true"] .profile_counters .count,
+html[data-huevo-badge-no-round="true"] .left_count,
+html[data-huevo-badge-no-round="true"] .unread-count,
+html[data-huevo-badge-no-round="true"] .unread_count,
+html[data-huevo-badge-no-round="true"] #mh-notif-count,
+html[data-huevo-badge-no-round="true"] .mh-notif-badge,
+html[data-huevo-badge-no-round="true"] #sidebar-nav .count,
+html[data-huevo-badge-no-round="true"] #sidebar-nav .badge,
+html[data-huevo-badge-no-round="true"] #sidebar-cell .count,
+html[data-huevo-badge-no-round="true"] #sidebar-cell .badge {
+  border-radius: 0 !important;
+}
+
+/* ====================================================================
+   6. Обводка в чатах и диалогах
+   ==================================================================== */
+html[data-huevo-chat-borders="true"] .nim-dialog,
+html[data-huevo-chat-borders="true"] .dialog_row,
+html[data-huevo-chat-borders="true"] table.dialog_row,
+html[data-huevo-chat-borders="true"] .im-dialog-item,
+html[data-huevo-chat-borders="true"] .im-dialog,
+html[data-huevo-chat-borders="true"] .im_dialog,
+html[data-huevo-chat-borders="true"] [data-peer].nim-dialog,
+html[data-huevo-chat-borders="true"] .im-page--dialogs .nim-dialog {
+  border: 1px solid var(--line, #4a5664) !important;
+  border-radius: var(--huevo-radius, 4px) !important;
+  padding: 8px 12px !important;
+  margin: 3px 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+html[data-huevo-chat-borders="true"] .im-mess,
+html[data-huevo-chat-borders="true"] .im_mess,
+html[data-huevo-chat-borders="true"] .im_msg,
+html[data-huevo-chat-borders="true"] .im-mess-stack,
+html[data-huevo-chat-borders="true"] table.im-mess,
+html[data-huevo-chat-borders="true"] table.im_msg,
+html[data-huevo-chat-borders="true"] .vk-chat-row,
+html[data-huevo-chat-borders="true"] .im-page--history .im-mess,
+html[data-huevo-chat-borders="true"] [data-peer] .im-mess,
+html[data-huevo-chat-borders="true"] [data-peer] .im_mess {
+  border: 1px solid var(--line, #4a5664) !important;
+  border-radius: var(--huevo-radius, 4px) !important;
+  box-sizing: border-box !important;
+}
+
+/* ====================================================================
+   5. Фикс кнопок закрытия и крестиков: строгий центр без смещений
+   ==================================================================== */
+#vk-photo-view .pv-close,
+.pv-close,
+#box_x,
+.box_x,
+.box_x_wrap,
+.box_x_button,
+[class*="pv-close"],
+[class*="box_x"],
+[class*="box-x"],
+.cm-x,
+.gcm-x,
+.hfp-x,
+.hgm-x,
+.hs-x,
+.hsk-x,
+.hsm-x,
+.hue-aedit-x,
+.hue-att-x,
+.hue-crop-x,
+.hue-popup-x,
+.hue-pinned-x,
+.hue-rec-x,
+.hue-reply-x,
+.hue-msg-bar-x,
+#ap-mini .ap-mini-close,
+.vk-ava-del button,
+.theme-modern .vk-ava-del button,
+.vk-ava-box .vk-ava-del button,
+.vk-ava-del form button,
+form[action*="/photo/del"] button,
+#gf-x,
+#pvm-x,
+.modal-close,
+.modal_close,
+[class*="modal-close"],
+[class*="modal_close"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+}
+
+/* Крестик удаления аватарки в профиле: строго по центру без смещений */
+.vk-ava-del button,
+.theme-modern .vk-ava-del button,
+.vk-ava-box .vk-ava-del button,
+.vk-ava-del form button,
+form[action*="/photo/del"] button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  min-height: 26px !important;
+  max-width: 26px !important;
+  max-height: 26px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  font-size: 18px !important;
+  box-sizing: border-box !important;
+}
+
+.vk-ava-del button *,
+.theme-modern .vk-ava-del button *,
+.vk-ava-box .vk-ava-del button * {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+}
+
+/* Кнопка закрытия поиска в шапке: скрыта на десктопе, показывается только при открытом мобильном поиске */
+.mh-search-close,
+button.mh-search-close,
+#mh-bar:not(.mh-search-open) .mh-search-close {
+  display: none !important;
+}
+
+#mh-bar.mh-search-open .mh-search-close {
+  display: inline-flex !important;
+}
+
+#vk-photo-view .pv-close,
+.pv-close {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+}
+
+#vk-photo-view .pv-close *,
+.pv-close *,
+.box_x *,
+[class*="pv-close"] *,
+[class*="box_x"] *,
+[class*="box-x"] *,
+.cm-x *,
+.gcm-x *,
+.hfp-x *,
+.hgm-x *,
+.hs-x *,
+.hsk-x *,
+.hsm-x *,
+#ap-mini .ap-mini-close * {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+}
+
+
+
