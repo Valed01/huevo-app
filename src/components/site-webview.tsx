@@ -1,8 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  BackHandler,
+  Linking,
+  PermissionsAndroid,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
 import { clearMedia, updateMedia } from 'huevo-media';
+import {
+  addOpenPathListener,
+  setPermissionAsked,
+  startNotifications,
+  takeLaunchPath,
+  wasPermissionAsked,
+} from 'huevo-notify';
 // Importing installs the server for the bundled themes extension (before the WebView loads).
 import { saveToDownloads } from 'huevo-themes';
 
@@ -17,6 +34,16 @@ import {
 
 const BEFORE_LOAD = MEDIA_SESSION_SHIM + THEMES_LOADER;
 
+// Pages a logged-out visitor sees: no point asking for notifications there.
+const GUEST_PAGE = /^\/($|login|register|forgot|auth|news$)/;
+
+/** Asks for the notification permission once, the first time the user is inside the site. */
+async function askNotificationsOnce() {
+  if (Platform.OS !== 'android' || Platform.Version < 33 || wasPermissionAsked()) return;
+  setPermissionAsked();
+  await PermissionsAndroid.request('android.permission.POST_NOTIFICATIONS').catch(() => null);
+}
+
 type Props = {
   background: string;
   onThemeColor: (color: string) => void;
@@ -28,6 +55,23 @@ export function SiteWebView({ background, onThemeColor }: Props) {
   const canGoBack = useRef(false);
   const themesOpen = useRef(false);
   const [failed, setFailed] = useState(false);
+  // Opened from a notification: start on its page.
+  const [startUrl] = useState(() => {
+    const path = takeLaunchPath();
+    return path ? SITE_URL + path.replace(/^\/+/, '') : SITE_URL;
+  });
+
+  useEffect(() => {
+    startNotifications(APP_UA_SUFFIX);
+    // Notification tapped while the app is running: go to its page (pjax navigation when available).
+    const sub = addOpenPathListener((path) => {
+      const target = JSON.stringify(path);
+      ref.current?.injectJavaScript(
+        `window.hueNavigate ? window.hueNavigate(${target}, true) : (location.href = ${target}); true;`,
+      );
+    });
+    return () => sub.remove();
+  }, []);
 
   // Hardware back goes back in the site history; at the start page it exits the app.
   useEffect(() => {
@@ -79,7 +123,7 @@ export function SiteWebView({ background, onThemeColor }: Props) {
   return (
     <WebView<object>
       ref={ref}
-      source={{ uri: SITE_URL }}
+      source={{ uri: startUrl }}
       style={{ backgroundColor: background }}
       applicationNameForUserAgent={APP_UA_SUFFIX}
       injectedJavaScriptBeforeContentLoaded={BEFORE_LOAD}
@@ -93,6 +137,10 @@ export function SiteWebView({ background, onThemeColor }: Props) {
       onNavigationStateChange={(nav) => {
         canGoBack.current = nav.canGoBack;
         if (nav.loading) themesOpen.current = false;
+        if (!nav.loading) {
+          const path = new URL(nav.url).pathname;
+          if (isInAppUrl(nav.url) && !GUEST_PAGE.test(path)) askNotificationsOnce();
+        }
       }}
       onError={() => setFailed(true)}
       onRenderProcessGone={() => {
