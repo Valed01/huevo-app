@@ -48,12 +48,26 @@ const cssLink = `(function () {
 })();`;
 // Each part is isolated so one failing script doesn't stop the others.
 const part = (name, code) => `try {\n${code}\n} catch (e) { console.error('[huevo-themes] ${name}:', e); }`;
+// content.js has two fallback sound triggers that misfire in the app: a DOM observer that
+// treats every message row added to the page as a new message (opening a chat renders its
+// whole history) and a bell-badge poll. The theme sound stays on the site's own signal
+// (its hueSounds.play, which fires only for genuinely new events), which content.js hooks.
+const CONTENT_PATCHES = [
+  ['    initDomNotificationObserver();\n', '    // initDomNotificationObserver(); (disabled in the app)\n'],
+  ['    startBadgeCheckInterval();\n', '    // startBadgeCheckInterval(); (disabled in the app)\n'],
+];
+let content = read(join(ext, 'content.js'));
+for (const [from, to] of CONTENT_PATCHES) {
+  if (!content.includes(from)) throw new Error(`build-themes: content.js changed, patch not applied: ${from.trim()}`);
+  content = content.split(from).join(to);
+}
+
 const bundle = [
   part('chrome-shim', read(join(adapters, 'chrome-shim.js'))),
   part('content.css', cssLink),
   part('themes.js', read(join(ext, 'themes.js'))),
   part('app-overrides', read(join(adapters, 'app-overrides.js'))),
-  part('content.js', read(join(ext, 'content.js'))),
+  part('content.js', content),
   part('inject', read(join(adapters, 'inject.js'))),
 ].join('\n');
 writeFileSync(join(out, 'content-bundle.js'), bundle);
