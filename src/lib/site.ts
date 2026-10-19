@@ -38,24 +38,64 @@ export function isDarkColor(color: string): boolean {
 }
 
 /**
- * Reports the page's <meta name="theme-color"> to the app so the system bars
- * match the site theme. Re-checks on pjax navigations and theme switches.
+ * Reports the colors of the site's own bars so the app can continue them under
+ * Android's status bar (top: the header) and gesture bar (bottom: the tab bar).
+ * Semi-transparent bars are blended over the page background, as they look on
+ * screen. Also squares the header's top and the tab bar's bottom corners (themes
+ * round them), so the color runs to the screen edge without notches.
  */
 export const INJECTED_JS = `
 (function () {
   var last = '';
-  function report() {
+  var style = document.createElement('style');
+  style.textContent = '#ap-header-wrap,#mh-bar{border-top-left-radius:0!important;border-top-right-radius:0!important}' +
+    '#hue-tabbar{border-bottom-left-radius:0!important;border-bottom-right-radius:0!important}';
+  (document.head || document.documentElement).appendChild(style);
+
+  function rgba(c) {
+    var m = /rgba?\\(([^)]+)\\)/.exec(c || '');
+    if (!m) return null;
+    var p = m[1].split(/[ ,\\/]+/).filter(Boolean).map(parseFloat);
+    return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+  }
+  function hex(c) {
+    return '#' + [c.r, c.g, c.b].map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join('');
+  }
+  function pageBg() {
+    var c = rgba(getComputedStyle(document.documentElement).backgroundColor);
+    if (c && c.a > 0) return c;
+    c = rgba(getComputedStyle(document.body || document.documentElement).backgroundColor);
+    if (c && c.a > 0) return c;
     var m = document.querySelector('meta[name="theme-color"]');
-    var c = m && m.getAttribute('content');
-    if (!c) c = getComputedStyle(document.body || document.documentElement).backgroundColor;
-    if (c && c !== last) {
-      last = c;
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'theme', color: c }));
-    }
+    var h = /#([0-9a-f]{6})/i.exec((m && m.getAttribute('content')) || '#1B1C1E');
+    var n = parseInt(h ? h[1] : '1B1C1E', 16);
+    return { r: n >> 16 & 255, g: n >> 8 & 255, b: n & 255, a: 1 };
+  }
+  // The visible color of an element's background, blended over the page.
+  function solid(sel) {
+    var base = pageBg();
+    var el = document.querySelector(sel);
+    var c = el && rgba(getComputedStyle(el).backgroundColor);
+    if (!c || c.a === 0) return hex(base);
+    return hex({ r: c.r * c.a + base.r * (1 - c.a), g: c.g * c.a + base.g * (1 - c.a), b: c.b * c.a + base.b * (1 - c.a) });
+  }
+  function report() {
+    var top = solid('#mh-bar') , bottom = document.getElementById('hue-tabbar') ? solid('#hue-tabbar') : hex(pageBg());
+    var key = top + bottom;
+    if (key === last) return;
+    last = key;
+    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'theme', color: top, bottom: bottom }));
+  }
+  var pending = false;
+  function schedule() {
+    if (pending) return;
+    pending = true;
+    setTimeout(function () { pending = false; report(); }, 150);
   }
   report();
-  new MutationObserver(report).observe(document.documentElement, {
-    subtree: true, childList: true, attributes: true, attributeFilter: ['content', 'class', 'data-scheme']
+  // Themes and the light/dark switch change the colors.
+  new MutationObserver(schedule).observe(document.documentElement, {
+    subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['content', 'class', 'data-scheme', 'style']
   });
   true;
 })();

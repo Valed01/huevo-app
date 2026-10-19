@@ -84,7 +84,8 @@ async function askPermissionsOnce() {
 
 type Props = {
   background: string;
-  onThemeColor: (color: string) => void;
+  /** Colors of the site's header (top) and tab bar (bottom). */
+  onThemeColor: (top: string, bottom?: string) => void;
   /** huevo.su link the app was opened with. */
   openUrl?: string;
 };
@@ -181,7 +182,9 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
   const onMessage = (e: WebViewMessageEvent) => {
     try {
       const msg = JSON.parse(e.nativeEvent.data);
-      if (msg?.type === 'theme' && typeof msg.color === 'string') onThemeColor(msg.color);
+      if (msg?.type === 'theme' && typeof msg.color === 'string') {
+        onThemeColor(msg.color, typeof msg.bottom === 'string' ? msg.bottom : undefined);
+      }
       if (msg?.type === 'themes-sheet') themesOpen.current = !!msg.open;
       if (msg?.type === 'open-notification-settings') openNotificationSettings();
       if (msg?.type === 'pull-refresh') setTouchOk(!!msg.ok);
