@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
-import { addMediaCommandListener, clearMedia, updateMedia } from 'huevo-media';
+import { clearMedia, updateMedia } from 'huevo-media';
 
 import { APP_UA_SUFFIX, INJECTED_JS, isInAppUrl, MEDIA_SESSION_SHIM, SITE_URL } from '@/lib/site';
 
@@ -27,19 +27,8 @@ export function SiteWebView({ background, onThemeColor }: Props) {
     return () => sub.remove();
   }, []);
 
-  // Buttons in the media notification run the site's own mediaSession handlers.
-  useEffect(() => {
-    const sub = addMediaCommandListener(({ action, seekTime }) => {
-      const details = seekTime != null ? { seekTime } : {};
-      ref.current?.injectJavaScript(
-        `window.__hueMS && window.__hueMS.fire(${JSON.stringify(action)}, ${JSON.stringify(details)}); true;`,
-      );
-    });
-    return () => {
-      sub.remove();
-      clearMedia();
-    };
-  }, []);
+  // Notification buttons are handled natively (they must work while the app is in background).
+  useEffect(() => () => clearMedia(), []);
 
   const onMessage = (e: WebViewMessageEvent) => {
     try {

@@ -1,6 +1,4 @@
-import { requireNativeModule, type EventSubscription } from 'expo';
-
-export type MediaAction = 'play' | 'pause' | 'stop' | 'nexttrack' | 'previoustrack' | 'seekto';
+import { requireNativeModule } from 'expo';
 
 export type MediaState = {
   title: string;
@@ -19,16 +17,14 @@ export type MediaState = {
 type Native = {
   update(state: MediaState): void;
   clear(): void;
-  addListener(
-    event: 'onCommand',
-    listener: (e: { action: MediaAction; seekTime?: number }) => void,
-  ): EventSubscription;
 };
 
 const native = requireNativeModule<Native>('HuevoMedia');
 
+/**
+ * Starts mirroring the page's player into the media notification. After this
+ * the native side drives itself (it talks to the WebView directly), so later
+ * calls only speed up updates while the app is in foreground.
+ */
 export const updateMedia = (state: MediaState) => native.update(state);
 export const clearMedia = () => native.clear();
-export const addMediaCommandListener = (
-  listener: (e: { action: MediaAction; seekTime?: number }) => void,
-) => native.addListener('onCommand', listener);

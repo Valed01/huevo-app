@@ -78,19 +78,26 @@ export const MEDIA_SESSION_SHIM = `
     var best = list[list.length - 1];
     try { return new URL(best.src, location.href).href; } catch (e) { return null; }
   }
+  function state() {
+    var audio = document.getElementById('ap-audio');
+    var position = audio && isFinite(audio.currentTime) ? audio.currentTime
+      : (pos && isFinite(pos.position) ? pos.position : -1);
+    var duration = pos && isFinite(pos.duration) ? pos.duration
+      : (audio && isFinite(audio.duration) ? audio.duration : -1);
+    return {
+      title: String(meta.title || ''), artist: String(meta.artist || ''), album: String(meta.album || ''),
+      artworkUrl: art(meta.artwork), playing: playback === 'playing', position: position,
+      duration: duration, rate: (pos && pos.playbackRate) || 1, actions: Object.keys(handlers)
+    };
+  }
   function sync(force) {
     if (!meta || playback === 'none') {
       if (last) { last = null; post({ type: 'media', clear: true }); }
       return;
     }
-    var playing = playback === 'playing';
-    var position = pos && isFinite(pos.position) ? pos.position : -1;
-    var rate = (pos && pos.playbackRate) || 1;
-    var cur = {
-      title: String(meta.title || ''), artist: String(meta.artist || ''), album: String(meta.album || ''),
-      artworkUrl: art(meta.artwork), playing: playing, duration: pos && isFinite(pos.duration) ? pos.duration : -1,
-      rate: rate, actions: Object.keys(handlers)
-    };
+    var cur = state();
+    var playing = cur.playing, position = cur.position, rate = cur.rate;
+    delete cur.position;
     var now = Date.now();
     var changed = force || !last || JSON.stringify(cur) !== last.key;
     if (!changed && position >= 0 && last.position >= 0) {
@@ -133,6 +140,11 @@ export const MEDIA_SESSION_SHIM = `
       var h = handlers[action];
       if (!h && action === 'stop') h = handlers.pause;
       if (h) { try { h(Object.assign({ action: action }, details || {})); } catch (e) {} }
+    },
+    /** Polled by the native module, which can't rely on postMessage while the app is in background. */
+    snapshot: function () {
+      if (!meta || playback === 'none') return JSON.stringify({ clear: true });
+      return JSON.stringify(state());
     }
   };
   window.addEventListener('pagehide', function () { post({ type: 'media', clear: true }); });

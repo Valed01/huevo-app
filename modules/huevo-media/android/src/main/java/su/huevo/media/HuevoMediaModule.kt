@@ -22,23 +22,10 @@ class HuevoMediaModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("HuevoMedia")
 
-    Events("onCommand")
-
-    OnCreate {
-      MediaController.listener = { action, seekTo ->
-        sendEvent("onCommand", buildMap {
-          put("action", action)
-          if (seekTo != null) put("seekTime", seekTo)
-        })
-      }
-    }
-
-    OnDestroy {
-      MediaController.listener = null
-    }
-
+    /** Called from JS when the page publishes a track (app in foreground); polling takes over from there. */
     Function("update") { state: MediaState ->
-      appContext.reactContext?.let { MediaController.update(it.applicationContext, state) }
+      val ctx = appContext.reactContext ?: return@Function null
+      MediaController.update(ctx.applicationContext, state, appContext.currentActivity)
       null
     }
 
