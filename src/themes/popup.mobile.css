@@ -53,6 +53,7 @@ html.huevo-app .hvthm-dropzone,
 html.huevo-app .action-icon,
 html.huevo-app .dropzone-icon,
 html.huevo-app .color-item-icon,
+html.huevo-app .app-footer,
 html.huevo-app .toggle-card:has(#toggle-sidebar-card),
 html.huevo-app .tab-btn[data-tab="tab-clock"],
 html.huevo-app #tab-clock,
@@ -565,15 +566,3 @@ html.huevo-app .color-item-controls input[type="text"] {
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
 }
-
-
-/* ---- Footer ---- */
-html.huevo-app .app-footer {
-  padding: 4px 14px 20px;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font-size: 12px;
-  text-align: center;
-}
-html.huevo-app .footer-link { color: var(--link); }
