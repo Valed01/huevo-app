@@ -49,3 +49,6 @@ example
 # native build output of local modules
 modules/*/android/build/
 modules/*/android/src/main/assets/
+
+# local AI tool settings
+.claude/
