@@ -25,10 +25,10 @@ class HuevoNotifyModule : Module() {
       null
     }
 
-    /** Whether we already asked for the notification permission (ask once, never nag). */
+    /** Whether the first-launch permission request (notifications, mic, camera) was shown. */
     Function("wasPermissionAsked") {
       val ctx = appContext.reactContext ?: return@Function true
-      NotifyWorker.prefs(ctx).getBoolean("asked", false)
+      NotifyWorker.prefs(ctx).getBoolean("permissionsAsked", false)
     }
 
     /** Android's notification settings for the app (channels, sound, on/off). */
@@ -44,7 +44,7 @@ class HuevoNotifyModule : Module() {
     }
 
     Function("setPermissionAsked") {
-      appContext.reactContext?.let { NotifyWorker.prefs(it).edit().putBoolean("asked", true).apply() }
+      appContext.reactContext?.let { NotifyWorker.prefs(it).edit().putBoolean("permissionsAsked", true).apply() }
       null
     }
 

@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
 import android.webkit.CookieManager
 import androidx.core.app.NotificationCompat
@@ -27,6 +28,7 @@ class NotifyWorker(context: Context, params: WorkerParameters) : Worker(context,
   companion object {
     const val EXTRA_PATH = "su.huevo.notify.PATH"
     const val INPUT_SEEN_ONLY = "seenOnly"
+    const val INPUT_TICK = "tick"
     const val PREF_UA = "ua"
 
     private const val SITE = "https://huevo.su"
@@ -53,6 +55,8 @@ class NotifyWorker(context: Context, params: WorkerParameters) : Worker(context,
   }
 
   override fun doWork(): Result {
+    // The 5-minute chain schedules its next run first, so a failure below can't break it.
+    if (inputData.getBoolean(INPUT_TICK, false)) NotifyScheduler.tick(applicationContext)
     val prefs = prefs(applicationContext)
     val data = fetchCounts(prefs) ?: return Result.success()
 
@@ -103,9 +107,11 @@ class NotifyWorker(context: Context, params: WorkerParameters) : Worker(context,
     val nm = NotificationManagerCompat.from(applicationContext)
     if (!nm.areNotificationsEnabled()) return
     ensureChannels()
-    val events = data.optJSONArray("events") ?: return
-    val fresh = (0 until events.length())
-      .mapNotNull { events.optJSONObject(it) }
+    // The site attaches details ("events") only to very recent items, so a check every
+    // ~15 min usually gets just the counters; then a generic notification is built from them.
+    val events = data.optJSONArray("events")
+    val fresh = (0 until (events?.length() ?: 0))
+      .mapNotNull { events?.optJSONObject(it) }
       .filter { ev ->
         val mark = MARKS[ev.optString("kind")] ?: return@filter false
         ev.optLong("id") > prefs.getLong(mark, 0)
@@ -113,6 +119,46 @@ class NotifyWorker(context: Context, params: WorkerParameters) : Worker(context,
       .sortedBy { it.optLong("id") }
       .takeLast(MAX_PER_RUN)
     fresh.forEach { show(nm, it) }
+
+    val covered = fresh.map { it.optString("kind") }.toSet()
+    fallbackEvents(data, prefs).filter { it.optString("kind") !in covered }.forEach { show(nm, it) }
+  }
+
+  /** Synthetic events from the counters when the site sent no details. */
+  private fun fallbackEvents(data: JSONObject, prefs: SharedPreferences): List<JSONObject> {
+    val out = mutableListOf<JSONObject>()
+    val unreadMessages = data.optInt("messages")
+    data.optJSONObject("last_message")?.let { last ->
+      val id = last.optLong("id")
+      if (id > prefs.getLong("m", 0)) {
+        val sender = last.optString("sender")
+        out += JSONObject()
+          .put("kind", "message").put("id", id)
+          .put("name", sender.ifBlank { "Новое сообщение" })
+          .put("text", if (unreadMessages > 1) "Непрочитанных сообщений: $unreadMessages" else "Новое сообщение")
+          .put("link", if (sender.isNotBlank()) "/messages/" + Uri.encode(sender) else "/messages")
+      }
+    }
+    data.optJSONObject("last_group_message")?.let { last ->
+      val id = last.optLong("id")
+      if (id > prefs.getLong("g", 0)) {
+        val chat = last.optLong("chat_id")
+        out += JSONObject()
+          .put("kind", "group").put("id", id)
+          .put("name", "Сообщение в беседе").put("text", "Новое сообщение в беседе")
+          .put("link", if (chat > 0) "/chats/$chat" else "/messages")
+      }
+    }
+    val notifId = data.optLong("last_notification_id")
+    if (notifId > prefs.getLong("n", 0)) {
+      val unread = data.optInt("notifications")
+      out += JSONObject()
+        .put("kind", "notify").put("id", notifId)
+        .put("name", "Уведомления")
+        .put("text", if (unread > 1) "Новых уведомлений: $unread" else "Новое уведомление")
+        .put("link", "/notifications")
+    }
+    return out
   }
 
   private fun show(nm: NotificationManagerCompat, ev: JSONObject) {

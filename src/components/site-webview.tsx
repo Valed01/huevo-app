@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
+import * as WebBrowser from 'expo-web-browser';
 
 import { clearMedia, updateMedia } from 'huevo-media';
 import {
@@ -48,36 +49,69 @@ import {
 
 const BEFORE_LOAD = MEDIA_SESSION_SHIM + THEMES_LOADER;
 
-// Pages a logged-out visitor sees: no point asking for notifications there.
-const GUEST_PAGE = /^\/($|login|register|forgot|auth|news$)/;
+/**
+ * Google doesn't allow its sign-in inside WebViews, so that page opens in a Custom
+ * Tab. The site started the sign-in here (its state cookie lives in the WebView);
+ * Google then returns to https://huevo.su/auth/google/..., which Android hands back
+ * to the app (huevo.su links set to open in the app) and the WebView finishes it.
+ */
+function isGoogleSignIn(url: string) {
+  try {
+    const { hostname } = new URL(url);
+    return hostname === 'accounts.google.com' || hostname.endsWith('.accounts.google.com');
+  } catch {
+    return false;
+  }
+}
 
-/** Asks for the notification permission once, the first time the user is inside the site. */
-async function askNotificationsOnce() {
-  if (Platform.OS !== 'android' || Platform.Version < 33 || wasPermissionAsked()) return;
+/**
+ * First launch: ask once for everything the site uses — notifications (Android 13+),
+ * microphone (voice messages, calls) and camera (video calls). Never asks again;
+ * anything declined can be turned on in Android settings.
+ */
+async function askPermissionsOnce() {
+  if (Platform.OS !== 'android' || wasPermissionAsked()) return;
   setPermissionAsked();
-  await PermissionsAndroid.request('android.permission.POST_NOTIFICATIONS').catch(() => null);
+  const wanted = [
+    ...(Platform.Version >= 33 ? [PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS] : []),
+    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+    PermissionsAndroid.PERMISSIONS.CAMERA,
+  ];
+  await PermissionsAndroid.requestMultiple(wanted).catch(() => null);
 }
 
 type Props = {
   background: string;
   onThemeColor: (color: string) => void;
+  /** huevo.su link the app was opened with. */
+  openUrl?: string;
 };
 
 /** The whole app: huevo.su in a WebView. */
-export function SiteWebView({ background, onThemeColor }: Props) {
+export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
   const ref = useRef<WebView<object>>(null);
   const canGoBack = useRef(false);
   const themesOpen = useRef(false);
   const release = useRef<Release | null>(null);
   const updateChecked = useRef(false);
   const [failed, setFailed] = useState(false);
-  // Opened from a notification: start on its page.
+  // Opened from a huevo.su link or a notification: start on that page.
   const [startUrl] = useState(() => {
+    if (openUrl && isInAppUrl(openUrl)) return openUrl;
     const path = takeLaunchPath();
     return path ? SITE_URL + path.replace(/^\/+/, '') : SITE_URL;
   });
 
+  // A huevo.su link opened while the app is running (also the Google sign-in return).
+  const lastOpen = useRef(openUrl);
   useEffect(() => {
+    if (!openUrl || openUrl === lastOpen.current || !isInAppUrl(openUrl)) return;
+    lastOpen.current = openUrl;
+    ref.current?.injectJavaScript(`location.href = ${JSON.stringify(openUrl)}; true;`);
+  }, [openUrl]);
+
+  useEffect(() => {
+    askPermissionsOnce();
     startNotifications(APP_UA_SUFFIX);
     // Notification tapped while the app is running: go to its page (pjax navigation when available).
     const sub = addOpenPathListener((path) => {
@@ -190,6 +224,10 @@ export function SiteWebView({ background, onThemeColor }: Props) {
       onMessage={onMessage}
       onShouldStartLoadWithRequest={({ url }) => {
         if (isInAppUrl(url)) return true;
+        if (isGoogleSignIn(url)) {
+          WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url));
+          return false;
+        }
         Linking.openURL(url).catch(() => {});
         return false;
       }}
@@ -197,8 +235,6 @@ export function SiteWebView({ background, onThemeColor }: Props) {
         canGoBack.current = nav.canGoBack;
         if (nav.loading) themesOpen.current = false;
         if (!nav.loading) {
-          const path = new URL(nav.url).pathname;
-          if (isInAppUrl(nav.url) && !GUEST_PAGE.test(path)) askNotificationsOnce();
           // Once per launch, after the first page is up: offer an update if there is one.
           if (!updateChecked.current && isInAppUrl(nav.url)) {
             updateChecked.current = true;
