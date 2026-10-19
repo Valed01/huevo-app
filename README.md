@@ -5,6 +5,8 @@
 Неофициальный open-source клиент соцсети [huevo.su](https://huevo.su) на React Native + Expo.
 Пока только Android.
 
+Автор — [Rubi](https://huevo.su/rubi). По всем вопросам и предложениям пишите мне на huEVO.
+
 > Это сторонний проект, не связанный с администрацией huEVO.
 
 ## Как устроено
