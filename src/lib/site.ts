@@ -57,3 +57,85 @@ export const INJECTED_JS = `
   true;
 })();
 `;
+
+/**
+ * Android WebView ignores navigator.mediaSession, so the site's player
+ * (huevo-player.js) has nowhere to publish its track. This shim replaces it,
+ * forwards metadata/state to the app (native media notification) and lets the
+ * app trigger the page's own action handlers via window.__hueMS.fire().
+ * Must run before the site's scripts.
+ */
+export const MEDIA_SESSION_SHIM = `
+(function () {
+  if (window.__hueMS) return;
+  var handlers = {}, meta = null, playback = 'none', pos = null, last = null;
+
+  function post(msg) {
+    if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(msg));
+  }
+  function art(list) {
+    if (!list || !list.length) return null;
+    var best = list[list.length - 1];
+    try { return new URL(best.src, location.href).href; } catch (e) { return null; }
+  }
+  function sync(force) {
+    if (!meta || playback === 'none') {
+      if (last) { last = null; post({ type: 'media', clear: true }); }
+      return;
+    }
+    var playing = playback === 'playing';
+    var position = pos && isFinite(pos.position) ? pos.position : -1;
+    var rate = (pos && pos.playbackRate) || 1;
+    var cur = {
+      title: String(meta.title || ''), artist: String(meta.artist || ''), album: String(meta.album || ''),
+      artworkUrl: art(meta.artwork), playing: playing, duration: pos && isFinite(pos.duration) ? pos.duration : -1,
+      rate: rate, actions: Object.keys(handlers)
+    };
+    var now = Date.now();
+    var changed = force || !last || JSON.stringify(cur) !== last.key;
+    if (!changed && position >= 0 && last.position >= 0) {
+      var expected = last.position + (last.playing ? (now - last.at) / 1000 * last.rate : 0);
+      changed = Math.abs(position - expected) > 1.5;
+    }
+    if (!changed) return;
+    last = { key: JSON.stringify(cur), position: position, playing: playing, rate: rate, at: now };
+    cur.type = 'media';
+    cur.position = position;
+    post(cur);
+  }
+
+  function MediaMetadata(init) {
+    init = init || {};
+    this.title = init.title || '';
+    this.artist = init.artist || '';
+    this.album = init.album || '';
+    this.artwork = init.artwork || [];
+  }
+  var session = {
+    get metadata() { return meta; },
+    set metadata(v) { meta = v || null; sync(); },
+    get playbackState() { return playback; },
+    set playbackState(v) { playback = v || 'none'; sync(); },
+    setActionHandler: function (action, fn) {
+      if (fn) handlers[action] = fn; else delete handlers[action];
+    },
+    setPositionState: function (p) { pos = p || null; sync(); },
+    setCameraActive: function () {},
+    setMicrophoneActive: function () {}
+  };
+  try {
+    window.MediaMetadata = MediaMetadata;
+    Object.defineProperty(navigator, 'mediaSession', { value: session, configurable: true });
+  } catch (e) {}
+
+  window.__hueMS = {
+    fire: function (action, details) {
+      var h = handlers[action];
+      if (!h && action === 'stop') h = handlers.pause;
+      if (h) { try { h(Object.assign({ action: action }, details || {})); } catch (e) {} }
+    }
+  };
+  window.addEventListener('pagehide', function () { post({ type: 'media', clear: true }); });
+  true;
+})();
+`;

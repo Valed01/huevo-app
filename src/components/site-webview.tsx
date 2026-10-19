@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
-import { APP_UA_SUFFIX, INJECTED_JS, isInAppUrl, SITE_URL } from '@/lib/site';
+import { addMediaCommandListener, clearMedia, updateMedia } from 'huevo-media';
+
+import { APP_UA_SUFFIX, INJECTED_JS, isInAppUrl, MEDIA_SESSION_SHIM, SITE_URL } from '@/lib/site';
 
 type Props = {
   background: string;
@@ -25,10 +27,28 @@ export function SiteWebView({ background, onThemeColor }: Props) {
     return () => sub.remove();
   }, []);
 
+  // Buttons in the media notification run the site's own mediaSession handlers.
+  useEffect(() => {
+    const sub = addMediaCommandListener(({ action, seekTime }) => {
+      const details = seekTime != null ? { seekTime } : {};
+      ref.current?.injectJavaScript(
+        `window.__hueMS && window.__hueMS.fire(${JSON.stringify(action)}, ${JSON.stringify(details)}); true;`,
+      );
+    });
+    return () => {
+      sub.remove();
+      clearMedia();
+    };
+  }, []);
+
   const onMessage = (e: WebViewMessageEvent) => {
     try {
       const msg = JSON.parse(e.nativeEvent.data);
       if (msg?.type === 'theme' && typeof msg.color === 'string') onThemeColor(msg.color);
+      if (msg?.type === 'media') {
+        if (msg.clear) clearMedia();
+        else updateMedia(msg);
+      }
     } catch {
       // not ours
     }
@@ -51,6 +71,7 @@ export function SiteWebView({ background, onThemeColor }: Props) {
       source={{ uri: SITE_URL }}
       style={{ backgroundColor: background }}
       applicationNameForUserAgent={APP_UA_SUFFIX}
+      injectedJavaScriptBeforeContentLoaded={MEDIA_SESSION_SHIM}
       injectedJavaScript={INJECTED_JS}
       onMessage={onMessage}
       onShouldStartLoadWithRequest={({ url }) => {
@@ -62,7 +83,10 @@ export function SiteWebView({ background, onThemeColor }: Props) {
         canGoBack.current = nav.canGoBack;
       }}
       onError={() => setFailed(true)}
-      onRenderProcessGone={() => ref.current?.reload()}
+      onRenderProcessGone={() => {
+        clearMedia();
+        ref.current?.reload();
+      }}
       startInLoadingState
       renderLoading={() => (
         <View style={[StyleSheet.absoluteFill, styles.center, { backgroundColor: background }]}>
