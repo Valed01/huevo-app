@@ -21,12 +21,24 @@ import {
   takeLaunchPath,
   wasPermissionAsked,
 } from 'huevo-notify';
+import {
+  addShowUpdateListener,
+  addUpdateProgressListener,
+  checkForUpdate,
+  installUpdate,
+  skipUpdate,
+  snoozeUpdate,
+  startUpdateChecks,
+  takeUpdateLaunchRequest,
+  type Release,
+} from 'huevo-update';
 // Importing installs the server for the bundled themes extension (before the WebView loads).
 import { saveToDownloads } from 'huevo-themes';
 
 import {
   APP_UA_SUFFIX,
   APP_UI_JS,
+  GITHUB_REPO,
   INJECTED_JS,
   isInAppUrl,
   MEDIA_SESSION_SHIM,
@@ -56,6 +68,8 @@ export function SiteWebView({ background, onThemeColor }: Props) {
   const ref = useRef<WebView<object>>(null);
   const canGoBack = useRef(false);
   const themesOpen = useRef(false);
+  const release = useRef<Release | null>(null);
+  const updateChecked = useRef(false);
   const [failed, setFailed] = useState(false);
   // Opened from a notification: start on its page.
   const [startUrl] = useState(() => {
@@ -75,9 +89,38 @@ export function SiteWebView({ background, onThemeColor }: Props) {
     return () => sub.remove();
   }, []);
 
+  const js = (code: string) => ref.current?.injectJavaScript(`${code}; true;`);
+
+  // Shows the "new version" dialog (built in the page with the site's components).
+  const offerUpdate = async (opts: { force?: boolean; ignoreSnooze?: boolean }) => {
+    const found = await checkForUpdate(opts).catch(() => null);
+    if (!found) return;
+    release.current = found;
+    js(`window.__huevoUpdate && window.__huevoUpdate.show(${JSON.stringify(found)})`);
+  };
+
+  // Daily background check + "update available" notification taps.
+  useEffect(() => {
+    startUpdateChecks(GITHUB_REPO);
+    const show = addShowUpdateListener(() => offerUpdate({ force: true, ignoreSnooze: true }));
+    const progress = addUpdateProgressListener((pct) => js(`window.__huevoUpdate && window.__huevoUpdate.progress(${pct})`));
+    return () => {
+      show.remove();
+      progress.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Hardware back goes back in the site history; at the start page it exits the app.
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (release.current) {
+        // Back on the update dialog = "Позже".
+        snoozeUpdate();
+        release.current = null;
+        js('window.__huevoUpdate && window.__huevoUpdate.close()');
+        return true;
+      }
       if (themesOpen.current) {
         ref.current?.injectJavaScript('window.__huevoThemes && window.__huevoThemes.close(); true;');
         return true;
@@ -98,6 +141,19 @@ export function SiteWebView({ background, onThemeColor }: Props) {
       if (msg?.type === 'theme' && typeof msg.color === 'string') onThemeColor(msg.color);
       if (msg?.type === 'themes-sheet') themesOpen.current = !!msg.open;
       if (msg?.type === 'open-notification-settings') openNotificationSettings();
+      if (msg?.type === 'update-install' && release.current) {
+        installUpdate(release.current).catch(() =>
+          js(`window.__huevoUpdate && window.__huevoUpdate.error(${JSON.stringify('Не удалось скачать обновление. Проверьте интернет и попробуйте ещё раз.')})`),
+        );
+      }
+      if (msg?.type === 'update-later') {
+        snoozeUpdate();
+        release.current = null;
+      }
+      if (msg?.type === 'update-skip' && typeof msg.tag === 'string') {
+        skipUpdate(msg.tag);
+        release.current = null;
+      }
       if (msg?.type === 'download' && typeof msg.data === 'string') {
         saveToDownloads(String(msg.name || 'file'), msg.data, String(msg.mime || 'application/octet-stream')).catch(
           () => {},
@@ -143,6 +199,12 @@ export function SiteWebView({ background, onThemeColor }: Props) {
         if (!nav.loading) {
           const path = new URL(nav.url).pathname;
           if (isInAppUrl(nav.url) && !GUEST_PAGE.test(path)) askNotificationsOnce();
+          // Once per launch, after the first page is up: offer an update if there is one.
+          if (!updateChecked.current && isInAppUrl(nav.url)) {
+            updateChecked.current = true;
+            const fromNotification = takeUpdateLaunchRequest();
+            offerUpdate({ force: fromNotification, ignoreSnooze: fromNotification });
+          }
         }
       }}
       onError={() => setFailed(true)}

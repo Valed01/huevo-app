@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+  <application>
+    <!-- Own subclass so it can't clash with other libraries' FileProvider entries. -->
+    <provider
+      android:name="su.huevo.update.UpdateFileProvider"
+      android:authorities="${applicationId}.huevo_update"
+      android:exported="false"
+      android:grantUriPermissions="true">
+      <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/huevo_update_paths" />
+    </provider>
+  </application>
+</manifest>

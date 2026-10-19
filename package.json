@@ -16,6 +16,7 @@
     "huevo-media": "file:modules/huevo-media",
     "huevo-notify": "file:modules/huevo-notify",
     "huevo-themes": "file:modules/huevo-themes",
+    "huevo-update": "file:modules/huevo-update",
     "react": "19.3.0",
     "react-native": "0.88.0",
     "react-native-gesture-handler": "~3.3.0",
