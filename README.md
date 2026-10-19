@@ -1,5 +1,7 @@
 # huEVO для Android
 
+[![Скачать APK](https://img.shields.io/github/v/release/Valed01/huevo-app?label=%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C%20APK&logo=android&logoColor=white&color=B01E1E&style=for-the-badge)](https://github.com/Valed01/huevo-app/releases/latest)
+
 [![Android build](https://github.com/Valed01/huevo-app/actions/workflows/android.yml/badge.svg)](https://github.com/Valed01/huevo-app/actions/workflows/android.yml)
 
 Неофициальный open-source клиент соцсети [huevo.su](https://huevo.su) на React Native + Expo.
