@@ -267,8 +267,10 @@ html.huevo-app .switch-toggle,
 html.huevo-app .switch-toggle.sm {
   order: -1;
   position: relative;
-  flex: 0 0 auto;
+  flex: 0 0 34px;
   width: 34px;
+  min-width: 34px;
+  max-width: 34px; /* popup.css caps .sm switches at 28px */
   height: 18px;
   margin: 0;
   cursor: pointer;
