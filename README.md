@@ -34,7 +34,7 @@
 - обновления: раз в день приложение проверяет GitHub Releases этого репозитория. Если вышла новая версия, приходит
   уведомление, а в приложении показывается окно со списком изменений из текста релиза и кнопками «Установить»
   (скачивает APK и открывает системный установщик), «Позже» (через сутки) и «Не показывать для этой версии»;
-- редактор тем: встроенное расширение [huEVO Themes](extensions/huevo-themes/NOTICE.md) by neriusshadow (с разрешения автора).
+- редактор тем: встроенное расширение [huEVO Themes](https://addons.mozilla.org/ru/firefox/addon/swagdev-huevo-themes/) (автор — neriusshadow, huEVO SWAGdev; [профиль на addons.mozilla.org](https://addons.mozilla.org/ru/firefox/user/20217851/)), лицензия MPL-2.0.
   Пункт «Темы оформления» в боковом меню, меню аватарки и «Настройки → Оформление»; по умолчанию тема «Стандартная» (сайт без изменений);
 - к User-Agent добавлено `huEVOApp/<версия>`, чтобы админы видели трафик приложения.
 
@@ -119,4 +119,10 @@ Android сам не даст поставить обновление, подпи
 
 ## Лицензия
 
-MIT
+Проект распространяется под лицензией [MIT](LICENSE).
+
+Исключение — встроенное расширение [huEVO Themes](https://addons.mozilla.org/ru/firefox/addon/swagdev-huevo-themes/) (автор — neriusshadow, huEVO SWAGdev):
+файлы в папке [`extensions/huevo-themes/`](extensions/huevo-themes/) распространяются под лицензией
+[Mozilla Public License 2.0 (MPL-2.0)](extensions/huevo-themes/LICENSE). Изменения, которые сборка
+(`scripts/build-themes.mjs`) вносит в эти файлы при упаковке в приложение, распространяются под той же лицензией.
+Код адаптации расширения под приложение (`src/themes/`) — под MIT.
