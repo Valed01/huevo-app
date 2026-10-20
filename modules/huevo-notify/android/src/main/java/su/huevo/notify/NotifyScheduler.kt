@@ -55,11 +55,13 @@ object NotifyScheduler {
     WorkManager.getInstance(context).cancelUniqueWork(TICK)
   }
 
-  /** One-off run that only moves the "already seen" marks forward. */
+  /** One-off run that only moves the "already seen" marks of the account open in the app forward. */
   fun markSeen(context: Context) {
     val request = OneTimeWorkRequestBuilder<NotifyWorker>()
       .setConstraints(network)
-      .setInputData(workDataOf(NotifyWorker.INPUT_SEEN_ONLY to true))
+      .setInputData(
+        workDataOf(NotifyWorker.INPUT_SEEN_ONLY to true, NotifyWorker.INPUT_ACCOUNT to NotifyWorker.currentAccount(context)),
+      )
       .build()
     WorkManager.getInstance(context).enqueueUniqueWork(SEEN, ExistingWorkPolicy.REPLACE, request)
   }

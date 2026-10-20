@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   BackHandler,
   Linking,
   PermissionsAndroid,
@@ -15,13 +16,24 @@ import {
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import * as WebBrowser from 'expo-web-browser';
 
+import {
+  accountsSupported,
+  addAccount,
+  currentAccount,
+  deleteRemovedProfiles,
+  listAccounts,
+  removeAccount,
+  setCurrentAccount,
+  updateAccount,
+  type Account,
+} from 'huevo-accounts';
 import { clearMedia, updateMedia } from 'huevo-media';
 import {
   addOpenPathListener,
   openNotificationSettings,
   setPermissionAsked,
   startNotifications,
-  takeLaunchPath,
+  takeLaunch,
   wasPermissionAsked,
 } from 'huevo-notify';
 import {
@@ -38,6 +50,7 @@ import {
 // Importing installs the server for the bundled themes extension (before the WebView loads).
 import { saveToDownloads } from 'huevo-themes';
 
+import { ACCOUNTS_JS } from '@/lib/accounts-ui';
 import {
   APP_UA_SUFFIX,
   APP_UI_JS,
@@ -50,6 +63,9 @@ import {
 } from '@/lib/site';
 
 const BEFORE_LOAD = MEDIA_SESSION_SHIM + THEMES_LOADER;
+const AFTER_LOAD = INJECTED_JS + APP_UI_JS + ACCOUNTS_JS;
+
+const accountLabel = (a: Account) => a.name || (a.user ? '@' + a.user : 'аккаунт');
 
 /**
  * Google doesn't allow its sign-in inside WebViews, so that page opens in a Custom
@@ -95,6 +111,9 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
   const ref = useRef<WebView<object>>(null);
   const canGoBack = useRef(false);
   const themesOpen = useRef(false);
+  const accountsOpen = useRef(false);
+  // Account shown before "Добавить аккаунт": Back on the new account's sign-in page returns there.
+  const addedFrom = useRef<string | null>(null);
   const release = useRef<Release | null>(null);
   const updateChecked = useRef(false);
   const [failed, setFailed] = useState(false);
@@ -105,12 +124,17 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   // Pull released: waiting for the page to confirm the gesture (see onRefresh).
   const pullTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Opened from a huevo.su link or a notification: start on that page.
-  const [startUrl] = useState(() => {
-    if (openUrl && isInAppUrl(openUrl)) return openUrl;
-    const path = takeLaunchPath();
-    return path ? SITE_URL + path.replace(/^\/+/, '') : SITE_URL;
+  // Which account the WebView shows and where it starts. Each account has its own WebView
+  // profile, taken when the WebView is created, so switching accounts recreates it (key).
+  // Opened from a huevo.su link or a notification: start on that page (in the notification's account).
+  const [session, setSession] = useState(() => {
+    const launch = takeLaunch();
+    if (launch?.account && listAccounts().some((a) => a.id === launch.account)) setCurrentAccount(launch.account);
+    const account = currentAccount();
+    if (openUrl && isInAppUrl(openUrl)) return { account, url: openUrl, n: 0 };
+    return { account, url: launch ? SITE_URL + launch.path.replace(/^\/+/, '') : SITE_URL, n: 0 };
   });
+  const account = useRef(session.account);
 
   // A huevo.su link opened while the app is running (also the Google sign-in return).
   const lastOpen = useRef(openUrl);
@@ -123,8 +147,13 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
   useEffect(() => {
     askPermissionsOnce();
     startNotifications(APP_UA_SUFFIX);
-    // Notification tapped while the app is running: go to its page (pjax navigation when available).
-    const sub = addOpenPathListener((path) => {
+    // Notification tapped while the app is running: go to its page (pjax navigation when available),
+    // switching to its account first if needed.
+    const sub = addOpenPathListener(({ path, account: forAccount }) => {
+      if (forAccount && forAccount !== account.current && listAccounts().some((a) => a.id === forAccount)) {
+        openAccount(forAccount, SITE_URL + path.replace(/^\/+/, ''));
+        return;
+      }
       const target = JSON.stringify(path);
       ref.current?.injectJavaScript(
         `window.hueNavigate ? window.hueNavigate(${target}, true) : (location.href = ${target}); true;`,
@@ -134,6 +163,97 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
   }, []);
 
   const js = (code: string) => ref.current?.injectJavaScript(`${code}; true;`);
+
+  // ---- Accounts (modules/huevo-accounts, page side in ACCOUNTS_JS) ----
+  const sendAccounts = () => {
+    const state = { accounts: listAccounts(), current: account.current, supported: accountsSupported() };
+    js(`window.__huevoAccounts && window.__huevoAccounts.set(${JSON.stringify(state)})`);
+  };
+
+  /** Shows the account (a new WebView in its profile), on its start page or `url`. */
+  function openAccount(id: string, url = SITE_URL) {
+    setCurrentAccount(id);
+    account.current = id;
+    clearMedia();
+    canGoBack.current = false;
+    themesOpen.current = false;
+    accountsOpen.current = false;
+    if (pullTimer.current) clearTimeout(pullTimer.current);
+    pullTimer.current = null;
+    setFailed(false);
+    setRefreshing(false);
+    setAtTop(true);
+    setTouchOk(true);
+    setSession((s) => ({ account: id, url, n: s.n + 1 }));
+    // Removed accounts' profiles can go once their WebView is destroyed.
+    setTimeout(() => deleteRemovedProfiles().catch(() => {}), 3000);
+  }
+
+  /** Removes an account; the current one: switch to another first. */
+  function dropAccount(id: string) {
+    const others = listAccounts().filter((a) => a.id !== id);
+    if (!others.length) return;
+    if (id === account.current) {
+      const next = addedFrom.current && others.some((a) => a.id === addedFrom.current) ? addedFrom.current : others[0].id;
+      setCurrentAccount(next);
+      account.current = next;
+      removeAccount(id).catch(() => {});
+      addedFrom.current = null;
+      openAccount(next);
+    } else {
+      removeAccount(id).then(sendAccounts, () => {});
+    }
+  }
+
+  // `from`: the account whose WebView sent it (a replaced WebView's last messages are ignored).
+  const onAccountMessage = (msg: { type?: string; id?: unknown; info?: Omit<Account, 'id'> }, from: string) => {
+    if (from !== account.current) return;
+    const id = typeof msg.id === 'string' ? msg.id : '';
+    if (msg.type === 'accounts-get') sendAccounts();
+    if (msg.type === 'account-switch' && id && id !== account.current) {
+      addedFrom.current = null;
+      openAccount(id);
+    }
+    if (msg.type === 'account-add' && accountsSupported()) {
+      addedFrom.current = account.current;
+      openAccount(addAccount());
+    }
+    if (msg.type === 'account-remove' && id) {
+      const acc = listAccounts().find((a) => a.id === id);
+      if (!acc) return;
+      Alert.alert(
+        'Убрать аккаунт?',
+        `${accountLabel(acc)} будет убран из приложения, вход в него на этом устройстве будет сброшен.`,
+        [
+          { text: 'Отмена', style: 'cancel' },
+          { text: 'Убрать', style: 'destructive', onPress: () => dropAccount(id) },
+        ],
+      );
+    }
+    if (msg.type === 'account-info' && msg.info && typeof msg.info === 'object') {
+      const info = msg.info;
+      updateAccount(account.current, {
+        loggedIn: !!info.loggedIn,
+        ...(info.loggedIn ? { user: info.user ?? '', name: info.name ?? '', avatar: info.avatar ?? '' } : {}),
+      });
+      // Signed in to an account that's already in the app: go to that one instead.
+      const user = info.user?.toLowerCase();
+      const same = user && listAccounts().find((a) => a.id !== account.current && a.user?.toLowerCase() === user);
+      if (same) {
+        Alert.alert('Этот аккаунт уже добавлен', `Открываю ${accountLabel(same)}.`);
+        const duplicate = account.current;
+        addedFrom.current = null;
+        setCurrentAccount(same.id);
+        account.current = same.id;
+        removeAccount(duplicate).catch(() => {});
+        openAccount(same.id);
+        return;
+      }
+      if (info.loggedIn) addedFrom.current = null;
+      sendAccounts();
+    }
+    if (msg.type === 'accounts-sheet') accountsOpen.current = !!(msg as { open?: unknown }).open;
+  };
 
   const reload = () => {
     ref.current?.reload();
@@ -177,23 +297,37 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
         ref.current?.injectJavaScript('window.__huevoThemes && window.__huevoThemes.back(); true;');
         return true;
       }
-      if (!canGoBack.current) return false;
-      ref.current?.goBack();
-      return true;
+      if (accountsOpen.current) {
+        js('window.__huevoAccounts && window.__huevoAccounts.close()');
+        return true;
+      }
+      if (canGoBack.current) {
+        ref.current?.goBack();
+        return true;
+      }
+      // Changed mind on "Добавить аккаунт" before signing in: back to the previous account.
+      const added = listAccounts().find((a) => a.id === account.current);
+      if (addedFrom.current && added && !added.user) {
+        dropAccount(added.id);
+        return true;
+      }
+      return false;
     });
     return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Notification buttons are handled natively (they must work while the app is in background).
   useEffect(() => () => clearMedia(), []);
 
-  const onMessage = (e: WebViewMessageEvent) => {
+  const onMessage = (e: WebViewMessageEvent, from: string) => {
     try {
       const msg = JSON.parse(e.nativeEvent.data);
       if (msg?.type === 'theme' && typeof msg.color === 'string') {
         onThemeColor(msg.color, typeof msg.bottom === 'string' ? msg.bottom : undefined);
       }
       if (msg?.type === 'themes-sheet') themesOpen.current = !!msg.open;
+      if (typeof msg?.type === 'string' && msg.type.startsWith('account')) onAccountMessage(msg, from);
       if (msg?.type === 'open-notification-settings') openNotificationSettings();
       if (msg?.type === 'pull-refresh') setTouchOk(!!msg.ok);
       if (msg?.type === 'pull-confirm' && pullTimer.current) {
@@ -270,13 +404,14 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
         />
       }>
       <WebView<object>
+        key={`${session.account}:${session.n}`}
         ref={ref}
-        source={{ uri: startUrl }}
+        source={{ uri: session.url }}
         style={{ backgroundColor: background }}
         applicationNameForUserAgent={APP_UA_SUFFIX}
         injectedJavaScriptBeforeContentLoaded={BEFORE_LOAD}
-        injectedJavaScript={INJECTED_JS + APP_UI_JS}
-        onMessage={onMessage}
+        injectedJavaScript={AFTER_LOAD}
+        onMessage={(e) => onMessage(e, session.account)}
         onShouldStartLoadWithRequest={({ url }) => {
           if (isInAppUrl(url)) return true;
           if (isGoogleSignIn(url)) {

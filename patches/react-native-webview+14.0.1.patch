@@ -1,7 +1,8 @@
 diff --git a/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewClient.java b/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewClient.java
+index 209b855..49343c6 100644
 --- a/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewClient.java
 +++ b/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewClient.java
-@@ -36,6 +36,22 @@
+@@ -36,6 +36,28 @@ import java.util.concurrent.atomic.AtomicReference;
  
  public class RNCWebViewClient extends WebViewClient {
      private static String TAG = "RNCWebViewClient";
@@ -11,6 +12,12 @@ diff --git a/node_modules/react-native-webview/android/src/main/java/com/reactna
 +     * Return null to let the request go to the network as usual.
 +     */
 +    public static volatile java.util.function.BiFunction<WebView, android.webkit.WebResourceRequest, android.webkit.WebResourceResponse> requestInterceptor = null;
++
++    /**
++     * huevo-app: called with each new WebView before anything else uses it, so a native
++     * module can set it up first (its profile: cookies and storage of an account).
++     */
++    public static volatile java.util.function.Consumer<WebView> onWebViewCreated = null;
 +
 +    @Override
 +    public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, android.webkit.WebResourceRequest request) {
@@ -24,3 +31,40 @@ diff --git a/node_modules/react-native-webview/android/src/main/java/com/reactna
      protected static final int SHOULD_OVERRIDE_URL_LOADING_TIMEOUT = 250;
  
      protected boolean mLastLoadFailed = false;
+diff --git a/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt b/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt
+index f83033b..cad987a 100644
+--- a/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt
++++ b/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt
+@@ -16,6 +16,7 @@ import android.webkit.DownloadListener
+ import android.webkit.WebSettings
+ import android.webkit.WebView
+ import androidx.webkit.WebSettingsCompat
++import androidx.webkit.WebViewCompat
+ import androidx.webkit.WebViewFeature
+ import com.facebook.react.bridge.ReadableArray
+ import com.facebook.react.bridge.ReadableMap
+@@ -60,7 +61,9 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
+         "Cannot download files as permission was denied. Please provide permission to write to storage, in order to download files."
+ 
+     fun createRNCWebViewInstance(context: ThemedReactContext): RNCWebView {
+-        return RNCWebView(context)
++        val webView = RNCWebView(context)
++        RNCWebViewClient.onWebViewCreated?.accept(webView)
++        return webView
+     }
+ 
+     fun createViewInstance(context: ThemedReactContext): RNCWebViewWrapper {
+@@ -111,7 +114,12 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
+             try {
+                 urlObj = URL(url)
+                 val baseUrl = urlObj.protocol + "://" + urlObj.host
+-                val cookie = CookieManager.getInstance().getCookie(baseUrl)
++                // huevo-app: the cookies of the WebView's own profile (account).
++                val cookie = if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
++                    WebViewCompat.getProfile(webView).cookieManager.getCookie(baseUrl)
++                } else {
++                    CookieManager.getInstance().getCookie(baseUrl)
++                }
+                 request.addRequestHeader("Cookie", cookie)
+             } catch (e: MalformedURLException) {
+                 Log.w(TAG, "Error getting cookie for DownloadManager", e)

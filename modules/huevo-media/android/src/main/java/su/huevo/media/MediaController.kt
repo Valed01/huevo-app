@@ -70,7 +70,8 @@ object MediaController {
   fun update(context: Context, newState: MediaState, activity: Activity?) {
     main.post {
       appContext = context
-      if (webView.get() == null) activity?.window?.decorView?.let { findWebView(it) }?.let {
+      // Not attached: the WebView was replaced (switching accounts recreates it).
+      if (webView.get()?.isAttachedToWindow != true) activity?.window?.decorView?.let { findWebView(it) }?.let {
         webView = WeakReference(it)
       }
       apply(newState)

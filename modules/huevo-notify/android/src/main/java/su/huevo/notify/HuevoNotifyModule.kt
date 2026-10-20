@@ -53,21 +53,25 @@ class HuevoNotifyModule : Module() {
       null
     }
 
-    /** Site path from the notification that launched the app, once. */
-    Function("takeLaunchPath") {
+    /** Site path (and account) from the notification that launched the app, once. */
+    Function("takeLaunch") {
       val intent = appContext.currentActivity?.intent ?: return@Function null
-      val path = intent.getStringExtra(NotifyWorker.EXTRA_PATH)
+      val path = intent.getStringExtra(NotifyWorker.EXTRA_PATH) ?: return@Function null
+      val account = intent.getStringExtra(NotifyWorker.EXTRA_ACCOUNT)
       intent.removeExtra(NotifyWorker.EXTRA_PATH)
-      path
+      intent.removeExtra(NotifyWorker.EXTRA_ACCOUNT)
+      mapOf("path" to path, "account" to account)
     }
 
     OnNewIntent { intent: Intent ->
       val path = intent.getStringExtra(NotifyWorker.EXTRA_PATH) ?: return@OnNewIntent
+      val account = intent.getStringExtra(NotifyWorker.EXTRA_ACCOUNT)
       intent.removeExtra(NotifyWorker.EXTRA_PATH)
-      sendEvent("onOpenPath", mapOf("path" to path))
+      intent.removeExtra(NotifyWorker.EXTRA_ACCOUNT)
+      sendEvent("onOpenPath", mapOf("path" to path, "account" to account))
     }
 
-    // In the app the site shows its own toasts: no system notifications while it's open.
+    // In the app the site shows its own toasts: no system notifications for the open account.
     OnActivityEntersForeground {
       NotifyWorker.appVisible = true
       appContext.reactContext?.let { NotifyWorker.clearShown(it.applicationContext) }

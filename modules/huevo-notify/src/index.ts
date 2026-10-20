@@ -3,12 +3,15 @@ import { requireNativeModule, type EventSubscription } from 'expo';
 type Native = {
   start(uaSuffix: string): void;
   stop(): void;
-  takeLaunchPath(): string | null;
+  takeLaunch(): { path: string; account?: string | null } | null;
   wasPermissionAsked(): boolean;
   setPermissionAsked(): void;
   openSettings(): void;
-  addListener(event: 'onOpenPath', listener: (e: { path: string }) => void): EventSubscription;
+  addListener(event: 'onOpenPath', listener: (e: OpenPath) => void): EventSubscription;
 };
+
+/** A tapped notification: site path and the account it's for (modules/huevo-accounts). */
+export type OpenPath = { path: string; account?: string | null };
 
 const native = requireNativeModule<Native>('HuevoNotify');
 
@@ -16,11 +19,11 @@ const native = requireNativeModule<Native>('HuevoNotify');
 export const startNotifications = (uaSuffix: string) => native.start(uaSuffix);
 export const stopNotifications = () => native.stop();
 
-/** Site path of the notification the app was opened from, if any (consumed on read). */
-export const takeLaunchPath = () => native.takeLaunchPath();
+/** The notification the app was opened from, if any (consumed on read). */
+export const takeLaunch = (): OpenPath | null => native.takeLaunch();
 /** Notification tapped while the app is already running. */
-export const addOpenPathListener = (listener: (path: string) => void) =>
-  native.addListener('onOpenPath', (e) => listener(e.path));
+export const addOpenPathListener = (listener: (open: OpenPath) => void) =>
+  native.addListener('onOpenPath', listener);
 
 /** Opens Android's notification settings for huEVO. */
 export const openNotificationSettings = () => native.openSettings();
