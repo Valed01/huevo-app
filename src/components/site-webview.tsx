@@ -103,6 +103,8 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
   const [atTop, setAtTop] = useState(true);
   const [touchOk, setTouchOk] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Pull released: waiting for the page to confirm the gesture (see onRefresh).
+  const pullTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Opened from a huevo.su link or a notification: start on that page.
   const [startUrl] = useState(() => {
     if (openUrl && isInAppUrl(openUrl)) return openUrl;
@@ -132,6 +134,12 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
   }, []);
 
   const js = (code: string) => ref.current?.injectJavaScript(`${code}; true;`);
+
+  const reload = () => {
+    ref.current?.reload();
+    // The spinner ends with the load; don't let a stalled page keep it forever.
+    setTimeout(() => setRefreshing(false), 15000);
+  };
 
   // Shows the "new version" dialog (built in the page with the site's components).
   const offerUpdate = async (opts: { force?: boolean; ignoreSnooze?: boolean }) => {
@@ -188,6 +196,12 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
       if (msg?.type === 'themes-sheet') themesOpen.current = !!msg.open;
       if (msg?.type === 'open-notification-settings') openNotificationSettings();
       if (msg?.type === 'pull-refresh') setTouchOk(!!msg.ok);
+      if (msg?.type === 'pull-confirm' && pullTimer.current) {
+        clearTimeout(pullTimer.current);
+        pullTimer.current = null;
+        if (msg.ok) reload();
+        else setRefreshing(false);
+      }
       if (msg?.type === 'update-install' && release.current) {
         installUpdate(release.current).catch(() =>
           js(
@@ -230,9 +244,15 @@ export function SiteWebView({ background, onThemeColor, openUrl }: Props) {
 
   const onRefresh = () => {
     setRefreshing(true);
-    ref.current?.reload();
-    // The spinner ends with the load; don't let a stalled page keep it forever.
-    setTimeout(() => setRefreshing(false), 15000);
+    // The native gesture went by the page's answer from an earlier touch (it arrives late),
+    // so a pull on a chat, menu or player could get here: reload only if the page confirms.
+    // No answer (page hung or not loaded yet): reload anyway.
+    if (pullTimer.current) clearTimeout(pullTimer.current);
+    pullTimer.current = setTimeout(() => {
+      pullTimer.current = null;
+      reload();
+    }, 1500);
+    js('window.__huevoPull && window.__huevoPull()');
   };
 
   return (

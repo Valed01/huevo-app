@@ -383,10 +383,19 @@ export const APP_UI_JS = `
     return true;
   }
   var lastPull = null;
+  var pullOk = true;
   document.addEventListener('touchstart', function (e) {
-    var ok = canPullFrom(e.target);
-    if (ok !== lastPull) { lastPull = ok; post({ type: 'pull-refresh', ok: ok }); }
+    // A second finger (pinch zoom) never pulls.
+    pullOk = e.touches.length === 1 && canPullFrom(e.target);
+    if (pullOk !== lastPull) { lastPull = pullOk; post({ type: 'pull-refresh', ok: pullOk }); }
   }, { capture: true, passive: true });
+  // The app's spinner is enabled from the message above, which arrives after the native
+  // gesture has already started (often it's still the previous touch's answer). So before
+  // reloading, the app asks here whether the gesture that just ended could pull.
+  window.__huevoPull = function () {
+    var top = (document.scrollingElement || document.documentElement).scrollTop <= 0;
+    post({ type: 'pull-confirm', ok: pullOk && top });
+  };
 
   var pending = false;
   new MutationObserver(function () {
